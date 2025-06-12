@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import Logo from "@/components/Logo";
 
 const DashboardNavbar = () => {
   const alertHistory = [
@@ -53,11 +53,7 @@ const DashboardNavbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
             <div className="relative">
-              <img 
-                src="/lovable-uploads/logo.png" 
-                alt="SkinlyAI Logo" 
-                className="w-10 h-10 rounded-xl shadow-lg"
-              />
+              <Logo className="w-10 h-10 text-red-600" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
               SkinnyAI
