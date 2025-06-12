@@ -31,7 +31,7 @@ const Register = () => {
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <Logo className="w-[200px] h-[200px] text-blue-600" />
+              <Logo className="w-[200px] h-auto text-blue-600" />
             </div>
           </div>
         </div>
