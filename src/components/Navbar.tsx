@@ -24,8 +24,11 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex items-center space-x-3">
-              <div className="relative">
-                <Logo className="w-[50px] h-[50px] text-blue-600" />
+              <div className="relative flex flex-row gap-3 items-center justify-between">
+                <Logo className="w-[50px] h-[50px] text-white" />
+                <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+                  SkinnyAI
+                </span>
               </div>
             </div>
           </div>
