@@ -3,8 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, TrendingUp, Eye } from "lucide-react";
+import { useState } from "react";
+import AnalysisDetailDialog from "./AnalysisDetailDialog";
 
 const HistorySection = () => {
+  const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const mockHistory = [
     {
       id: 1,
@@ -31,6 +36,11 @@ const HistorySection = () => {
       image: "https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=100&h=100&fit=crop"
     }
   ];
+
+  const handleViewAnalysis = (analysis: any) => {
+    setSelectedAnalysis(analysis);
+    setDialogOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -99,7 +109,7 @@ const HistorySection = () => {
                   </div>
                 </div>
                 
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" onClick={() => handleViewAnalysis(analysis)}>
                   <Eye className="w-4 h-4 mr-2" />
                   View
                 </Button>
@@ -108,6 +118,12 @@ const HistorySection = () => {
           </div>
         </CardContent>
       </Card>
+
+      <AnalysisDetailDialog
+        analysis={selectedAnalysis}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   );
 };
