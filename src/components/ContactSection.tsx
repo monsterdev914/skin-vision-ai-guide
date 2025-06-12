@@ -53,7 +53,7 @@ const ContactSection = () => {
     // Remove ripple after animation
     setTimeout(() => {
       setRipples(prev => prev.filter(ripple => ripple.id !== newRipple.id));
-    }, 600);
+    }, 800);
   };
 
   return (
@@ -190,22 +190,37 @@ const ContactSection = () => {
                   <button
                     type="submit"
                     onClick={createRipple}
-                    className="relative w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 overflow-hidden"
+                    className="relative w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-12 px-6 py-2 overflow-hidden shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Send className="mr-2 h-4 w-4" />
                     Send Message
                     {ripples.map((ripple) => (
-                      <span
-                        key={ripple.id}
-                        className="absolute bg-white bg-opacity-30 rounded-full"
-                        style={{
-                          left: ripple.x - 10,
-                          top: ripple.y - 10,
-                          width: '20px',
-                          height: '20px',
-                          animation: 'ripple-effect 0.6s linear',
-                        }}
-                      />
+                      <div key={ripple.id}>
+                        {/* Main ripple effect */}
+                        <span
+                          className="absolute rounded-full pointer-events-none"
+                          style={{
+                            left: ripple.x - 15,
+                            top: ripple.y - 15,
+                            width: '30px',
+                            height: '30px',
+                            background: 'radial-gradient(circle, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 50%, transparent 100%)',
+                            animation: 'ripple-effect 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                          }}
+                        />
+                        {/* Secondary pulse effect */}
+                        <span
+                          className="absolute rounded-full pointer-events-none"
+                          style={{
+                            left: ripple.x - 10,
+                            top: ripple.y - 10,
+                            width: '20px',
+                            height: '20px',
+                            background: 'rgba(255,255,255,0.4)',
+                            animation: 'ripple-pulse 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s',
+                          }}
+                        />
+                      </div>
                     ))}
                   </button>
                 </form>
