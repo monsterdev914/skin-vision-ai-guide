@@ -10,7 +10,7 @@ const Logo = ({ className = "w-10 h-10", size = 40 }: LogoProps) => {
   className={className}
   width={size} 
   height={size} 
-  viewBox="0 0 1024 1024"
+  viewBox="0 0 313.000000 316.000000"
   fill="currentColor"
   xmlns="http://www.w3.org/2000/svg"
 >
