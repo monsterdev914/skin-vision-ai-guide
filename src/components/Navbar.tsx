@@ -62,8 +62,8 @@ const Navbar = () => {
               </Button>
             </Link>
             <Link to="/register">
-              <Button className="bg-transparent text-red-600 border-2 border-transparent bg-gradient-to-r from-red-600 to-red-700 bg-clip-border hover:bg-gradient-to-r hover:from-red-50 hover:to-red-50 font-medium relative before:absolute before:inset-0 before:p-[2px] before:bg-gradient-to-r before:from-red-600 before:to-red-700 before:rounded-md before:content-[''] before:-z-10">
-                <span className="relative z-10">Get Started</span>
+              <Button className="bg-gradient-to-r from-red-600 to-red-700 text-white hover:opacity-90 font-medium">
+                Get Started
               </Button>
             </Link>
           </div>
@@ -99,8 +99,8 @@ const Navbar = () => {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button className="w-full bg-transparent text-red-600 border-2 border-transparent bg-gradient-to-r from-red-600 to-red-700 bg-clip-border hover:bg-gradient-to-r hover:from-red-50 hover:to-red-50 font-medium relative before:absolute before:inset-0 before:p-[2px] before:bg-gradient-to-r before:from-red-600 before:to-red-700 before:rounded-md before:content-[''] before:-z-10">
-                    <span className="relative z-10">Get Started</span>
+                  <Button className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white font-medium">
+                    Get Started
                   </Button>
                 </Link>
               </div>
