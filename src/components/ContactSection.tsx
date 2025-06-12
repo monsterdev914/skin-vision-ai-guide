@@ -197,13 +197,13 @@ const ContactSection = () => {
                     {ripples.map((ripple) => (
                       <span
                         key={ripple.id}
-                        className="absolute bg-white bg-opacity-30 rounded-full animate-ping"
+                        className="absolute bg-white bg-opacity-30 rounded-full"
                         style={{
                           left: ripple.x - 10,
                           top: ripple.y - 10,
                           width: '20px',
                           height: '20px',
-                          animation: 'ripple 0.6s linear',
+                          animation: 'ripple-effect 0.6s linear',
                         }}
                       />
                     ))}
@@ -214,19 +214,6 @@ const ContactSection = () => {
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes ripple {
-          0% {
-            transform: scale(0);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(4);
-            opacity: 0;
-          }
-        }
-      `}</style>
     </section>
   );
 };
