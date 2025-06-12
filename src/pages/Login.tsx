@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import Logo from "@/components/Logo";
 
-import { Heart, Eye, EyeOff } from "lucide-react";
+import { Heart, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,11 +16,35 @@ const Login = () => {
     email: "",
     password: ""
   });
+  const [errors, setErrors] = useState({
+    email: "",
+    password: ""
+  });
+
+  const validateForm = () => {
+    const newErrors = { email: "", password: "" };
+    
+    if (!formData.email) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+    
+    setErrors(newErrors);
+    return !newErrors.email && !newErrors.password;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log("Login attempt:", formData);
+    if (validateForm()) {
+      console.log("Login attempt:", formData);
+    }
   };
 
   return (
@@ -49,23 +73,40 @@ const Login = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="Enter your email" 
-                  value={formData.email} 
-                  onChange={e => setFormData({
-                    ...formData,
-                    email: e.target.value
-                  })} 
-                  required 
-                  className="h-12" 
-                />
+                <Label htmlFor="email" className={errors.email ? "text-destructive" : ""}>
+                  Email
+                </Label>
+                <div className="relative">
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="Enter your email" 
+                    value={formData.email} 
+                    onChange={e => setFormData({
+                      ...formData,
+                      email: e.target.value
+                    })} 
+                    required 
+                    className={`h-12 ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
+                  />
+                  {errors.email && (
+                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-destructive" />
+                  )}
+                </div>
+                {errors.email && (
+                  <p id="email-error" className="text-sm font-medium text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.email}
+                  </p>
+                )}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className={errors.password ? "text-destructive" : ""}>
+                  Password
+                </Label>
                 <div className="relative">
                   <Input 
                     id="password" 
@@ -77,18 +118,31 @@ const Login = () => {
                       password: e.target.value
                     })} 
                     required 
-                    className="h-12 pr-12" 
+                    className={`h-12 pr-20 ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? "password-error" : undefined}
                   />
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm" 
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0" 
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                    {errors.password && (
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    )}
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0" 
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
+                {errors.password && (
+                  <p id="password-error" className="text-sm font-medium text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.password}
+                  </p>
+                )}
               </div>
               
               <div className="flex items-center justify-between">
