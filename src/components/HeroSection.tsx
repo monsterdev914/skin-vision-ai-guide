@@ -1,16 +1,12 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Camera, Sparkles, ArrowRight, Play } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const HeroSection = () => {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
-
-  return (
-    <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+  return <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="text-center lg:text-left">
@@ -33,7 +29,7 @@ const HeroSection = () => {
             
             <div className="flex flex-col sm:flex-row justify-center lg:justify-start items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
               <Link to="/dashboard">
-                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 px-8 py-3">
+                <Button size="lg" className=" text-white hover:opacity-90 px-8 py-3">
                   <Camera className="mr-2 h-5 w-5" />
                   Start Analysis
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -49,16 +45,7 @@ const HeroSection = () => {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[800px] p-0">
                   <div className="aspect-video">
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                      title="SkinnyAI Demo Video"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="rounded-lg"
-                    ></iframe>
+                    <iframe width="100%" height="100%" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="SkinnyAI Demo Video" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="rounded-lg"></iframe>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -67,11 +54,7 @@ const HeroSection = () => {
           
           <div className="flex justify-center lg:justify-end">
             <div className="relative">
-              <img 
-                src="https://optim.tildacdn.net/tild3666-6131-4465-b830-653561383839/-/resize/560x/-/format/webp/2_-_Main_Image.png.webp"
-                alt="AI Skin Analysis Technology"
-                className="w-full max-w-lg h-auto rounded-2xl shadow-2xl"
-              />
+              <img src="https://optim.tildacdn.net/tild3666-6131-4465-b830-653561383839/-/resize/560x/-/format/webp/2_-_Main_Image.png.webp" alt="AI Skin Analysis Technology" className="w-full max-w-lg h-auto rounded-2xl shadow-2xl" />
               <div className="absolute inset-0 bg-gradient-to-t from-blue-600/20 to-transparent rounded-2xl"></div>
             </div>
           </div>
@@ -103,8 +86,6 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default HeroSection;
