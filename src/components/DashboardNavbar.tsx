@@ -13,8 +13,48 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const DashboardNavbar = () => {
+  const [isAlertHistoryOpen, setIsAlertHistoryOpen] = useState(false);
+
+  const alertHistory = [
+    {
+      id: 1,
+      title: "Analysis Complete",
+      message: "Your skin analysis for uploaded image has been completed.",
+      time: "2 hours ago",
+      type: "success"
+    },
+    {
+      id: 2,
+      title: "Treatment Reminder",
+      message: "Don't forget to apply your recommended moisturizer.",
+      time: "1 day ago",
+      type: "info"
+    },
+    {
+      id: 3,
+      title: "Subscription Expiring",
+      message: "Your Premium subscription expires in 3 days.",
+      time: "2 days ago",
+      type: "warning"
+    },
+    {
+      id: 4,
+      title: "New Feature Available",
+      message: "Try our new AR skin preview feature!",
+      time: "3 days ago",
+      type: "info"
+    }
+  ];
+
   return (
     <nav className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,10 +77,36 @@ const DashboardNavbar = () => {
             </Badge>
 
             {/* Notifications */}
-            <Button variant="ghost" size="sm" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
-            </Button>
+            <Dialog open={isAlertHistoryOpen} onOpenChange={setIsAlertHistoryOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="relative">
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Alert History</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {alertHistory.map((alert) => (
+                    <div key={alert.id} className="flex flex-col space-y-1 p-3 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">{alert.title}</h4>
+                        <span className="text-xs text-gray-500">{alert.time}</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{alert.message}</p>
+                      <Badge 
+                        variant={alert.type === 'success' ? 'default' : alert.type === 'warning' ? 'destructive' : 'secondary'}
+                        className="w-fit text-xs"
+                      >
+                        {alert.type}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* User Menu */}
             <DropdownMenu>
