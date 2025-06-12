@@ -7,6 +7,14 @@ import { Heart, Menu, X } from "lucide-react";
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const handleSectionClick = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+    setIsMenuOpen(false); // Close mobile menu after clicking
+  };
+
   return (
     <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,18 +34,30 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
-              <Link to="#features" className="text-gray-600 hover:text-blue-600 transition-colors">
+              <button 
+                onClick={() => handleSectionClick('features')}
+                className="text-gray-600 hover:text-blue-600 transition-colors"
+              >
                 Features
-              </Link>
-              <Link to="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors">
+              </button>
+              <button 
+                onClick={() => handleSectionClick('pricing')}
+                className="text-gray-600 hover:text-blue-600 transition-colors"
+              >
                 Pricing
-              </Link>
-              <Link to="#about" className="text-gray-600 hover:text-blue-600 transition-colors">
+              </button>
+              <button 
+                onClick={() => handleSectionClick('testimonials')}
+                className="text-gray-600 hover:text-blue-600 transition-colors"
+              >
                 About
-              </Link>
-              <Link to="#contact" className="text-gray-600 hover:text-blue-600 transition-colors">
+              </button>
+              <button 
+                onClick={() => handleSectionClick('contact')}
+                className="text-gray-600 hover:text-blue-600 transition-colors"
+              >
                 Contact
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -71,18 +91,30 @@ const Navbar = () => {
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-              <Link to="#features" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
+              <button 
+                onClick={() => handleSectionClick('features')}
+                className="block w-full text-left px-3 py-2 text-gray-600 hover:text-blue-600"
+              >
                 Features
-              </Link>
-              <Link to="#pricing" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
+              </button>
+              <button 
+                onClick={() => handleSectionClick('pricing')}
+                className="block w-full text-left px-3 py-2 text-gray-600 hover:text-blue-600"
+              >
                 Pricing
-              </Link>
-              <Link to="#about" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
+              </button>
+              <button 
+                onClick={() => handleSectionClick('testimonials')}
+                className="block w-full text-left px-3 py-2 text-gray-600 hover:text-blue-600"
+              >
                 About
-              </Link>
-              <Link to="#contact" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
+              </button>
+              <button 
+                onClick={() => handleSectionClick('contact')}
+                className="block w-full text-left px-3 py-2 text-gray-600 hover:text-blue-600"
+              >
                 Contact
-              </Link>
+              </button>
               <div className="px-3 py-2 space-y-2">
                 <Link to="/login">
                   <Button variant="ghost" className="w-full text-gray-600">
