@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,6 +85,27 @@ const Profile = () => {
 
   const handleAccountSettings = () => {
     navigate('/settings');
+  };
+
+  const handleChangePassword = () => {
+    toast({
+      title: "Change Password",
+      description: "Password change functionality would be implemented here.",
+    });
+  };
+
+  const handleTwoFactorAuth = () => {
+    toast({
+      title: "Two-Factor Authentication",
+      description: "Two-factor authentication setup would be implemented here.",
+    });
+  };
+
+  const handlePrivacySettings = () => {
+    toast({
+      title: "Privacy Settings",
+      description: "Privacy settings configuration would be implemented here.",
+    });
   };
 
   return (
@@ -266,13 +288,13 @@ const Profile = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" size="sm" className="w-full justify-start">
+                <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleChangePassword}>
                   Change Password
                 </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
+                <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleTwoFactorAuth}>
                   Two-Factor Auth
                 </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
+                <Button variant="outline" size="sm" className="w-full justify-start" onClick={handlePrivacySettings}>
                   Privacy Settings
                 </Button>
               </CardContent>
