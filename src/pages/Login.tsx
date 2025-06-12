@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import Logo from "@/components/Logo";
+
 import { Heart, Eye, EyeOff } from "lucide-react";
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +26,7 @@ const Login = () => {
           <div className="flex items-center space-x-3">
             <div className="relative">
               <div className="w-12 h-12 bg-gradient-to-r from-red-600 to-red-700 rounded-xl flex items-center justify-center shadow-lg">
-                <Heart className="w-7 h-7 text-white" />
+                <Logo className="w-7 h-7 text-white" />
               </div>
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
             </div>
