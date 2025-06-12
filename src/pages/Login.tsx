@@ -25,14 +25,10 @@ const Login = () => {
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-r from-red-600 to-red-700 rounded-xl flex items-center justify-center shadow-lg">
-                <Logo className="w-7 h-7 text-white" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
-              SkinnyAI
-            </span>
+              <Logo className="w-7 h-7 text-white" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+                SkinnyAI
+              </span>
           </div>
         </div>
 
