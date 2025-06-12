@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +13,8 @@ const ContactSection = () => {
     subject: "",
     message: ""
   });
+
+  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -33,6 +34,26 @@ const ContactSection = () => {
       subject: "",
       message: ""
     });
+  };
+
+  const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    const newRipple = {
+      id: Date.now(),
+      x,
+      y
+    };
+    
+    setRipples(prev => [...prev, newRipple]);
+    
+    // Remove ripple after animation
+    setTimeout(() => {
+      setRipples(prev => prev.filter(ripple => ripple.id !== newRipple.id));
+    }, 600);
   };
 
   return (
@@ -166,19 +187,46 @@ const ContactSection = () => {
                     />
                   </div>
 
-                  <Button
+                  <button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
+                    onClick={createRipple}
+                    className="relative w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 overflow-hidden"
                   >
                     <Send className="mr-2 h-4 w-4" />
                     Send Message
-                  </Button>
+                    {ripples.map((ripple) => (
+                      <span
+                        key={ripple.id}
+                        className="absolute bg-white bg-opacity-30 rounded-full animate-ping"
+                        style={{
+                          left: ripple.x - 10,
+                          top: ripple.y - 10,
+                          width: '20px',
+                          height: '20px',
+                          animation: 'ripple 0.6s linear',
+                        }}
+                      />
+                    ))}
+                  </button>
                 </form>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes ripple {
+          0% {
+            transform: scale(0);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(4);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </section>
   );
 };
