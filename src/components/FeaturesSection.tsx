@@ -47,7 +47,7 @@ const FeaturesSection = () => {
     <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <Badge variant="secondary" className="mb-4 bg-purple-100 text-purple-700">
+          <Badge variant="secondary" className="mb-4 bg-green-100 text-green-700">
             Powerful Features
           </Badge>
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -63,10 +63,10 @@ const FeaturesSection = () => {
             <Card key={index} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 bg-white">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
-                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                     {feature.badge}
                   </Badge>
                 </div>
