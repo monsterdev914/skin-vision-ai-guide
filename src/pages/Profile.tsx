@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { User, Mail, Calendar, Camera, Settings, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import DashboardNavbar from "@/components/DashboardNavbar";
 
 const Profile = () => {
@@ -24,6 +25,7 @@ const Profile = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSave = () => {
     setIsEditing(false);
@@ -78,6 +80,10 @@ const Profile = () => {
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleAccountSettings = () => {
+    navigate('/settings');
   };
 
   return (
@@ -244,7 +250,7 @@ const Profile = () => {
                   <span className="text-sm font-medium">12 / ∞</span>
                 </div>
                 <Separator />
-                <Button variant="outline" size="sm" className="w-full">
+                <Button variant="outline" size="sm" className="w-full" onClick={handleAccountSettings}>
                   <Settings className="w-4 h-4 mr-2" />
                   Account Settings
                 </Button>
