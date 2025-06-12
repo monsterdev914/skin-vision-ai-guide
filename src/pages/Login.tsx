@@ -29,7 +29,7 @@ const Login = () => {
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center space-x-3">
-            <div className="relative">
+            <div className="relative flex flex-row gap-3 items-center justify-between">
               <Logo className="w-7 h-7 text-white" />
               <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
                 SkinnyAI
