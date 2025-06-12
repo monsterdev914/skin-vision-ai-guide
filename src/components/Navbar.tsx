@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -25,12 +25,11 @@ const Navbar = () => {
           <div className="flex items-center">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <img 
-                  src="/lovable-uploads/logo.png" 
-                  alt="SkinlyAI Logo" 
-                  className="w-[50] h-[50] rounded-xl shadow-lg"
-                />
+                <Logo className="w-10 h-10 text-red-600" />
               </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+                SkinnyAI
+              </span>
             </div>
           </div>
 
