@@ -13,17 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 
 const DashboardNavbar = () => {
-  const [isAlertHistoryOpen, setIsAlertHistoryOpen] = useState(false);
-
   const alertHistory = [
     {
       id: 1,
@@ -77,36 +68,38 @@ const DashboardNavbar = () => {
             </Badge>
 
             {/* Notifications */}
-            <Dialog open={isAlertHistoryOpen} onOpenChange={setIsAlertHistoryOpen}>
-              <DialogTrigger asChild>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="relative">
                   <Bell className="w-5 h-5" />
                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Alert History</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {alertHistory.map((alert) => (
-                    <div key={alert.id} className="flex flex-col space-y-1 p-3 border rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">{alert.title}</h4>
-                        <span className="text-xs text-gray-500">{alert.time}</span>
-                      </div>
-                      <p className="text-sm text-gray-600">{alert.message}</p>
-                      <Badge 
-                        variant={alert.type === 'success' ? 'default' : alert.type === 'warning' ? 'destructive' : 'secondary'}
-                        className="w-fit text-xs"
-                      >
-                        {alert.type}
-                      </Badge>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-80" align="end">
+                <DropdownMenuLabel>Alert History</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="max-h-96 overflow-y-auto">
+                  {alertHistory.map((alert, index) => (
+                    <div key={alert.id}>
+                      <DropdownMenuItem className="flex flex-col items-start p-4 h-auto">
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <h4 className="text-sm font-medium">{alert.title}</h4>
+                          <span className="text-xs text-gray-500">{alert.time}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
+                        <Badge 
+                          variant={alert.type === 'success' ? 'default' : alert.type === 'warning' ? 'destructive' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {alert.type}
+                        </Badge>
+                      </DropdownMenuItem>
+                      {index < alertHistory.length - 1 && <DropdownMenuSeparator />}
                     </div>
                   ))}
                 </div>
-              </DialogContent>
-            </Dialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* User Menu */}
             <DropdownMenu>
