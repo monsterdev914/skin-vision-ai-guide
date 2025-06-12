@@ -59,7 +59,7 @@ const PricingSection = () => {
     <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <Badge variant="secondary" className="mb-4 bg-green-100 text-green-700">
+          <Badge variant="secondary" className="mb-4 bg-blue-100 text-blue-700">
             Simple Pricing
           </Badge>
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -75,11 +75,11 @@ const PricingSection = () => {
             <Card 
               key={index} 
               className={`relative bg-white border-2 hover:shadow-xl transition-all duration-300 ${
-                plan.popular ? 'border-green-500 scale-105' : 'border-gray-200'
+                plan.popular ? 'border-blue-500 scale-105' : 'border-gray-200'
               }`}
             >
               {plan.popular && (
-                <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
+                <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                   <Star className="w-3 h-3 mr-1" />
                   Most Popular
                 </Badge>
@@ -115,7 +115,7 @@ const PricingSection = () => {
                     variant={plan.buttonVariant}
                     className={`w-full py-6 ${
                       plan.popular 
-                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:opacity-90' 
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90' 
                         : ''
                     }`}
                   >
