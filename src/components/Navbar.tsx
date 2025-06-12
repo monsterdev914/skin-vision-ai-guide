@@ -25,7 +25,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <Logo className="w-[120px] h-[120px] text-blue-600" />
+                <Logo className="w-[50px] h-[50px] text-blue-600" />
               </div>
             </div>
           </div>
