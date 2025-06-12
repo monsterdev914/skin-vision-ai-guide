@@ -12,7 +12,7 @@ const Navbar = () => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
-    setIsMenuOpen(false);
+    setIsMenuOpen(false); // Close mobile menu after clicking
   };
 
   return (
@@ -22,10 +22,10 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-gray-900 to-gray-700 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <Heart className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 SkinnyAI
               </span>
             </div>
@@ -69,7 +69,7 @@ const Navbar = () => {
               </Button>
             </Link>
             <Link to="/register">
-              <Button className="bg-gradient-to-r from-gray-900 to-gray-700 text-white hover:opacity-90">
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90">
                 Get Started
               </Button>
             </Link>
@@ -122,7 +122,7 @@ const Navbar = () => {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button className="w-full bg-gradient-to-r from-gray-900 to-gray-700 text-white">
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                     Get Started
                   </Button>
                 </Link>

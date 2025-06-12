@@ -10,11 +10,11 @@ const Pricing = () => {
       <Navbar />
       <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center mb-16">
-          <Badge variant="secondary" className="mb-6 bg-gray-100 text-gray-700 border-gray-200">
+          <Badge variant="secondary" className="mb-6 bg-blue-100 text-blue-700 border-blue-200">
             💰 Simple & Transparent Pricing
           </Badge>
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
-            Choose Your <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            Choose Your <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Perfect Plan
             </span>
           </h1>
