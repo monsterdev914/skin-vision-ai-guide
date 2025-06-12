@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,11 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Mail, Calendar, Camera, Settings, Shield } from "lucide-react";
+import { User, Mail, Calendar as CalendarIcon, Camera, Settings, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardNavbar from "@/components/DashboardNavbar";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -19,7 +22,7 @@ const Profile = () => {
     name: "John Doe",
     email: "john@example.com",
     phone: "+1 (555) 123-4567",
-    dateOfBirth: "1990-05-15",
+    dateOfBirth: new Date("1990-05-15"),
     skinType: "Combination",
     concerns: ["Acne", "Aging", "Hydration"]
   });
@@ -40,6 +43,12 @@ const Profile = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setProfile(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      setProfile(prev => ({ ...prev, dateOfBirth: date }));
+    }
   };
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -177,14 +186,38 @@ const Profile = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dob">Date of Birth</Label>
-                    <Input
-                      id="dob"
-                      type="date"
-                      value={profile.dateOfBirth}
-                      onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-                      disabled={!isEditing}
-                    />
+                    <Label>Date of Birth</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !profile.dateOfBirth && "text-muted-foreground"
+                          )}
+                          disabled={!isEditing}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {profile.dateOfBirth ? (
+                            format(profile.dateOfBirth, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={profile.dateOfBirth}
+                          onSelect={handleDateChange}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
               </CardContent>
