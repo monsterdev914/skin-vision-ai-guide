@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,18 +9,22 @@ import { Separator } from "@/components/ui/separator";
 import Logo from "@/components/Logo";
 
 import { Heart, Eye, EyeOff } from "lucide-react";
+
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle login logic here
     console.log("Login attempt:", formData);
   };
-  return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4">
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
@@ -29,6 +34,7 @@ const Login = () => {
               <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
                 SkinnyAI
               </span>
+            </div>
           </div>
         </div>
 
@@ -44,20 +50,42 @@ const Login = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="Enter your email" value={formData.email} onChange={e => setFormData({
-                ...formData,
-                email: e.target.value
-              })} required className="h-12" />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="Enter your email" 
+                  value={formData.email} 
+                  onChange={e => setFormData({
+                    ...formData,
+                    email: e.target.value
+                  })} 
+                  required 
+                  className="h-12" 
+                />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={formData.password} onChange={e => setFormData({
-                  ...formData,
-                  password: e.target.value
-                })} required className="h-12 pr-12" />
-                  <Button type="button" variant="ghost" size="sm" className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0" onClick={() => setShowPassword(!showPassword)}>
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="Enter your password" 
+                    value={formData.password} 
+                    onChange={e => setFormData({
+                      ...formData,
+                      password: e.target.value
+                    })} 
+                    required 
+                    className="h-12 pr-12" 
+                  />
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0" 
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
@@ -69,7 +97,7 @@ const Login = () => {
                 </Link>
               </div>
               
-              <Button type="submit" className="w-full h-12 bg-gradient-to-r from-blue-600 to-pink-700 text-white hover:opacity-90 ">
+              <Button type="submit" className="w-full h-12 bg-gradient-to-r from-blue-600 to-pink-700 text-white hover:opacity-90">
                 Sign In
               </Button>
             </form>
@@ -107,6 +135,8 @@ const Login = () => {
           </CardContent>
         </Card>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Login;
