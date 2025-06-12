@@ -35,16 +35,16 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <DashboardNavbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             AI Skin Analysis Dashboard
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Upload your skin image to get instant AI-powered analysis and personalized recommendations
           </p>
         </div>
@@ -55,10 +55,10 @@ const Dashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Analyses This Month</p>
-                  <p className="text-2xl font-bold text-gray-900">12</p>
+                  <p className="text-sm font-medium text-muted-foreground">Analyses This Month</p>
+                  <p className="text-2xl font-bold text-foreground">12</p>
                 </div>
-                <Brain className="w-8 h-8 text-blue-600" />
+                <Brain className="w-8 h-8 text-primary" />
               </div>
             </CardContent>
           </Card>
@@ -67,10 +67,10 @@ const Dashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Accuracy Rate</p>
-                  <p className="text-2xl font-bold text-gray-900">95%</p>
+                  <p className="text-sm font-medium text-muted-foreground">Accuracy Rate</p>
+                  <p className="text-2xl font-bold text-foreground">95%</p>
                 </div>
-                <CheckCircle className="w-8 h-8 text-green-600" />
+                <CheckCircle className="w-8 h-8 text-primary" />
               </div>
             </CardContent>
           </Card>
@@ -79,10 +79,10 @@ const Dashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Improvement</p>
-                  <p className="text-2xl font-bold text-gray-900">+23%</p>
+                  <p className="text-sm font-medium text-muted-foreground">Improvement</p>
+                  <p className="text-2xl font-bold text-foreground">+23%</p>
                 </div>
-                <Heart className="w-8 h-8 text-red-600" />
+                <Heart className="w-8 h-8 text-primary" />
               </div>
             </CardContent>
           </Card>
@@ -91,10 +91,10 @@ const Dashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Plan</p>
-                  <p className="text-2xl font-bold text-gray-900">Premium</p>
+                  <p className="text-sm font-medium text-muted-foreground">Plan</p>
+                  <p className="text-2xl font-bold text-foreground">Premium</p>
                 </div>
-                <Badge className="bg-gradient-to-r from-blue-600 to-purple-600">
+                <Badge className="bg-primary text-primary-foreground">
                   Active
                 </Badge>
               </div>

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -46,15 +47,15 @@ const DashboardNavbar = () => {
   ];
 
   return (
-    <nav className="bg-white border-b border-gray-200">
+    <nav className="bg-background border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <Heart className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Heart className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-xl font-bold text-primary">
               SkinnyAI
             </span>
           </Link>
@@ -62,7 +63,7 @@ const DashboardNavbar = () => {
           {/* Right side */}
           <div className="flex items-center space-x-4">
             {/* Subscription Badge */}
-            <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+            <Badge className="bg-primary text-primary-foreground">
               Premium
             </Badge>
 
@@ -71,7 +72,7 @@ const DashboardNavbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="relative">
                   <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full text-xs"></span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-80" align="end">
@@ -83,9 +84,9 @@ const DashboardNavbar = () => {
                       <DropdownMenuItem className="flex flex-col items-start p-4 h-auto">
                         <div className="flex items-center justify-between w-full mb-1">
                           <h4 className="text-sm font-medium">{alert.title}</h4>
-                          <span className="text-xs text-gray-500">{alert.time}</span>
+                          <span className="text-xs text-muted-foreground">{alert.time}</span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
+                        <p className="text-sm text-muted-foreground mb-2">{alert.message}</p>
                         <Badge 
                           variant={alert.type === 'success' ? 'default' : alert.type === 'warning' ? 'destructive' : 'secondary'}
                           className="text-xs"
