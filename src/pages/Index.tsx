@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import CTASection from "@/components/CTASection";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ContactSection from "@/components/ContactSection";
 
 const Index = () => {
   return (
@@ -21,6 +21,7 @@ const Index = () => {
       <FeaturesSection />
       <TestimonialsSection />
       <PricingSection />
+      <ContactSection />
       <CTASection />
       <Footer />
     </div>
