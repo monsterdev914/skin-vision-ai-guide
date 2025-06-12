@@ -39,7 +39,7 @@ const PricingSection = () => {
     },
     {
       name: "Pro",
-      price: "49",
+      price: "75",
       description: "Advanced features for skin care professionals",
       features: [
         "Everything in Premium",
@@ -51,7 +51,8 @@ const PricingSection = () => {
       ],
       buttonText: "Contact Sales",
       buttonVariant: "outline" as const,
-      popular: false
+      popular: false,
+      isYearly: true
     }
   ];
 
@@ -96,7 +97,9 @@ const PricingSection = () => {
                   <span className="text-4xl font-bold text-gray-900">
                     ${plan.price}
                   </span>
-                  <span className="text-gray-600">/month</span>
+                  <span className="text-gray-600">
+                    {plan.isYearly ? '/year' : '/month'}
+                  </span>
                 </div>
               </CardHeader>
               
