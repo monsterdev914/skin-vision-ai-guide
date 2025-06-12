@@ -8,6 +8,13 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
   Settings as SettingsIcon, 
   Bell, 
   Shield, 
@@ -32,6 +39,9 @@ const Settings = () => {
     dataSharing: false,
     analyticsTracking: true,
   });
+
+  const [language, setLanguage] = useState("en");
+  const [timezone, setTimezone] = useState("utc");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -65,21 +75,31 @@ const Settings = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="language">Language</Label>
-                  <select id="language" className="w-full p-2 border border-gray-300 rounded-md">
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                  </select>
+                  <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Spanish</SelectItem>
+                      <SelectItem value="fr">French</SelectItem>
+                      <SelectItem value="de">German</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
-                  <select id="timezone" className="w-full p-2 border border-gray-300 rounded-md">
-                    <option value="utc">UTC</option>
-                    <option value="est">Eastern Time</option>
-                    <option value="pst">Pacific Time</option>
-                    <option value="cst">Central Time</option>
-                  </select>
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="utc">UTC</SelectItem>
+                      <SelectItem value="est">Eastern Time</SelectItem>
+                      <SelectItem value="pst">Pacific Time</SelectItem>
+                      <SelectItem value="cst">Central Time</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
