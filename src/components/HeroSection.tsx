@@ -29,7 +29,7 @@ const HeroSection = () => {
             
             <div className="flex flex-col sm:flex-row justify-center lg:justify-start items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
               <Link to="/dashboard">
-                <Button size="lg" className=" bg-gradient-to-r from-red-600 to-blue-600 text-white hover:opacity-90 px-8 py-3">
+                <Button size="lg" className=" bg-gradient-to-r from-red-500 to-blue-400 text-white hover:opacity-90 px-8 py-3">
                   <Camera className="mr-2 h-5 w-5" />
                   Start Analysis
                   <ArrowRight className="ml-2 h-5 w-5" />
