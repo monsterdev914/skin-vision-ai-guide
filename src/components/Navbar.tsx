@@ -1,9 +1,12 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
   const handleSectionClick = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -13,17 +16,20 @@ const Navbar = () => {
     }
     setIsMenuOpen(false); // Close mobile menu after clicking
   };
-  return <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50">
+
+  return (
+    <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-red-700 rounded-xl flex items-center justify-center shadow-lg">
-                  <Heart className="w-5 h-5 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
+                <img 
+                  src="/lovable-uploads/logo.png" 
+                  alt="SkinlyAI Logo" 
+                  className="w-10 h-10 rounded-xl shadow-lg"
+                />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
                 SkinnyAI
@@ -101,6 +107,8 @@ const Navbar = () => {
             </div>
           </div>}
       </div>
-    </nav>;
+    </nav>
+  );
 };
+
 export default Navbar;
