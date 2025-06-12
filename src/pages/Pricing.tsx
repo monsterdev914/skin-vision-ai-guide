@@ -14,7 +14,7 @@ const Pricing = () => {
             💰 Simple & Transparent Pricing
           </Badge>
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
-            Choose Your <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            Choose Your <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Perfect Plan
             </span>
           </h1>
