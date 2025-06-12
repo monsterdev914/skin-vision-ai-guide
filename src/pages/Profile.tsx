@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { User, Mail, Calendar, Camera, Settings, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 import DashboardNavbar from "@/components/DashboardNavbar";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [profileImage, setProfileImage] = useState("https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face");
   const [profile, setProfile] = useState({
     name: "John Doe",
     email: "john@example.com",
@@ -20,15 +21,63 @@ const Profile = () => {
     skinType: "Combination",
     concerns: ["Acne", "Aging", "Hydration"]
   });
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleSave = () => {
     setIsEditing(false);
     // Here you would typically save to backend
     console.log("Profile saved:", profile);
+    toast({
+      title: "Profile Updated",
+      description: "Your profile has been successfully updated.",
+    });
   };
 
   const handleInputChange = (field: string, value: string) => {
     setProfile(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please select an image file (JPG, PNG, WebP).",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please select an image smaller than 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setProfileImage(result);
+        toast({
+          title: "Photo Updated",
+          description: "Your profile photo has been updated successfully.",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -154,13 +203,23 @@ const Profile = () => {
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-4">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" alt="Profile" />
+                  <AvatarImage src={profileImage} alt="Profile" />
                   <AvatarFallback className="text-lg">JD</AvatarFallback>
                 </Avatar>
-                <Button variant="outline" size="sm">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+                <Button variant="outline" size="sm" onClick={triggerFileInput}>
                   <Camera className="w-4 h-4 mr-2" />
                   Change Photo
                 </Button>
+                <p className="text-xs text-gray-500 text-center">
+                  JPG, PNG or WebP. Max size 5MB.
+                </p>
               </CardContent>
             </Card>
 
