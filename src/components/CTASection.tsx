@@ -1,11 +1,8 @@
-
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Camera } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const CTASection = () => {
-  return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-purple-600">
+  return <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-purple-600">
       <div className="max-w-4xl mx-auto text-center">
         <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
           Ready to Transform Your Skin Health?
@@ -24,7 +21,7 @@ const CTASection = () => {
             </Button>
           </Link>
           <Link to="/pricing">
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3">
+            <Button size="lg" variant="outline" className="border-white hover:bg-white px-8 py-3 text-fuchsia-950">
               View Pricing
             </Button>
           </Link>
@@ -45,8 +42,6 @@ const CTASection = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default CTASection;
