@@ -14,12 +14,12 @@ const HeroSection = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="text-center lg:text-left">
-            <Badge variant="secondary" className="mb-6 bg-blue-100 text-blue-700 border-blue-200">
+            <Badge variant="secondary" className="mb-6 bg-gray-100 text-gray-700 border-gray-200">
               🚀 AI-Powered Skin Analysis
             </Badge>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-              Your <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Your <span className="bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                 Personal AI
               </span>
               <br />
@@ -33,7 +33,7 @@ const HeroSection = () => {
             
             <div className="flex flex-col sm:flex-row justify-center lg:justify-start items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
               <Link to="/dashboard">
-                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90 px-8 py-3">
+                <Button size="lg" className="bg-gradient-to-r from-gray-900 to-gray-700 text-white hover:opacity-90 px-8 py-3">
                   <Camera className="mr-2 h-5 w-5" />
                   Start Analysis
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -72,7 +72,7 @@ const HeroSection = () => {
                 alt="AI Skin Analysis Technology"
                 className="w-full max-w-lg h-auto rounded-2xl shadow-2xl"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-blue-600/20 to-transparent rounded-2xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent rounded-2xl"></div>
             </div>
           </div>
         </div>

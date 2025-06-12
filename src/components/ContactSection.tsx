@@ -39,11 +39,11 @@ const ContactSection = () => {
     <section id="contact" className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <Badge variant="secondary" className="mb-6 bg-blue-100 text-blue-700 border-blue-200">
+          <Badge variant="secondary" className="mb-6 bg-gray-100 text-gray-700 border-gray-200">
             📞 Get In Touch
           </Badge>
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
-            Contact <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Contact <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
               Our Team
             </span>
           </h2>
@@ -168,7 +168,7 @@ const ContactSection = () => {
 
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
+                    className="w-full bg-gradient-to-r from-gray-900 to-gray-700 text-white hover:opacity-90"
                   >
                     <Send className="mr-2 h-4 w-4" />
                     Send Message
