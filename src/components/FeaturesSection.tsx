@@ -63,7 +63,7 @@ const FeaturesSection = () => {
             <Card key={index} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 bg-white">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-gradient-to-r from-gray-900 to-gray-700 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
                   <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
