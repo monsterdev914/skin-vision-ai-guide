@@ -17,9 +17,9 @@ const Logo = ({ className = "w-10 h-10", size = 40 }: LogoProps) => {
       >
         <defs>
           <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#0000FF" />
-            <stop offset="50%" stopColor="#0000FF" />
-            <stop offset="100%" stopColor="#0000FF" />
+            <stop offset="0%" stopColor="#1d4ed8" />
+            <stop offset="50%" stopColor="#2563eb" />
+            <stop offset="100%" stopColor="#2563eb" />
           </linearGradient>
           <filter id="glow">
             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
