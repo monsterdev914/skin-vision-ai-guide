@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +79,7 @@ const PricingSection = () => {
               }`}
             >
               {plan.popular && (
-                <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                   <Star className="w-3 h-3 mr-1" />
                   Most Popular
                 </Badge>
@@ -118,7 +117,7 @@ const PricingSection = () => {
                     variant={plan.buttonVariant}
                     className={`w-full py-6 ${
                       plan.popular 
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90' 
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90' 
                         : ''
                     }`}
                   >
