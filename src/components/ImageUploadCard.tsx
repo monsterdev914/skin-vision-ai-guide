@@ -101,7 +101,7 @@ const ImageUploadCard = ({ onImageUpload }: ImageUploadCardProps) => {
             <div className="space-y-3">
               <Button
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Choose File
