@@ -131,7 +131,7 @@ const ContactSection = () => {
                     <Textarea id="message" name="message" required value={formData.message} onChange={handleInputChange} placeholder="Tell us more about your inquiry..." className="min-h-[120px]" />
                   </div>
 
-                  <Button type="submit" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 font-medium">
+                  <Button type="submit" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 font-medium w-full ">
                     <Send className="mr-2 h-4 w-4" />
                     Send Message
                   </Button>
