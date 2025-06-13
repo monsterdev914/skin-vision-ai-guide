@@ -23,7 +23,7 @@ const PricingSection = () => {
     },
     {
       name: "Premium",
-      price: "19",
+      price: "9.99",
       description: "Comprehensive skin care for serious users",
       features: [
         "Unlimited AI analyses",
