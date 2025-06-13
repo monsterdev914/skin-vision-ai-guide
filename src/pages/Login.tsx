@@ -6,9 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import Logo from "@/components/Logo";
-
 import { Heart, Eye, EyeOff, AlertCircle } from "lucide-react";
-
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,35 +17,31 @@ const Login = () => {
     email: "",
     password: ""
   });
-
   const validateForm = () => {
-    const newErrors = { email: "", password: "" };
-    
+    const newErrors = {
+      email: "",
+      password: ""
+    };
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
     }
-    
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
-    
     setErrors(newErrors);
     return !newErrors.email && !newErrors.password;
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
       console.log("Login attempt:", formData);
     }
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4">
+  return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
@@ -76,30 +70,16 @@ const Login = () => {
                   Email
                 </Label>
                 <div className="relative">
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="Enter your email" 
-                    value={formData.email} 
-                    onChange={e => setFormData({
-                      ...formData,
-                      email: e.target.value
-                    })} 
-                    required 
-                    className={`h-12 ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                    aria-invalid={!!errors.email}
-                    aria-describedby={errors.email ? "email-error" : undefined}
-                  />
-                  {errors.email && (
-                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-destructive" />
-                  )}
+                  <Input id="email" type="email" placeholder="Enter your email" value={formData.email} onChange={e => setFormData({
+                  ...formData,
+                  email: e.target.value
+                })} required className={`h-12 ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`} aria-invalid={!!errors.email} aria-describedby={errors.email ? "email-error" : undefined} />
+                  {errors.email && <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-destructive" />}
                 </div>
-                {errors.email && (
-                  <p id="email-error" className="text-sm font-medium text-destructive flex items-center gap-1">
+                {errors.email && <p id="email-error" className="text-sm font-medium text-destructive flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     {errors.email}
-                  </p>
-                )}
+                  </p>}
               </div>
               
               <div className="space-y-2">
@@ -107,41 +87,21 @@ const Login = () => {
                   Password
                 </Label>
                 <div className="relative">
-                  <Input 
-                    id="password" 
-                    type={showPassword ? "text" : "password"} 
-                    placeholder="Enter your password" 
-                    value={formData.password} 
-                    onChange={e => setFormData({
-                      ...formData,
-                      password: e.target.value
-                    })} 
-                    required 
-                    className={`h-12 pr-20 ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                    aria-invalid={!!errors.password}
-                    aria-describedby={errors.password ? "password-error" : undefined}
-                  />
+                  <Input id="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={formData.password} onChange={e => setFormData({
+                  ...formData,
+                  password: e.target.value
+                })} required className={`h-12 pr-20 ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`} aria-invalid={!!errors.password} aria-describedby={errors.password ? "password-error" : undefined} />
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-                    {errors.password && (
-                      <AlertCircle className="h-4 w-4 text-destructive" />
-                    )}
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0" 
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
+                    {errors.password && <AlertCircle className="h-4 w-4 text-destructive" />}
+                    <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
-                {errors.password && (
-                  <p id="password-error" className="text-sm font-medium text-destructive flex items-center gap-1">
+                {errors.password && <p id="password-error" className="text-sm font-medium text-destructive flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     {errors.password}
-                  </p>
-                )}
+                  </p>}
               </div>
               
               <div className="flex items-center justify-between">
@@ -150,7 +110,7 @@ const Login = () => {
                 </Link>
               </div>
               
-              <Button type="submit" className="w-full h-12 bg-gradient-to-r from-blue-600 to-pink-700 text-white hover:opacity-90">
+              <Button type="submit" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 font-medium">
                 Sign In
               </Button>
             </form>
@@ -188,8 +148,6 @@ const Login = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Login;
