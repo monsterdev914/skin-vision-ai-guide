@@ -49,7 +49,7 @@ const DashboardNavbar = () => {
           {/* Right side */}
           <div className="flex items-center space-x-4">
             {/* Subscription Badge */}
-            <Badge className="bg-gradient-to-r from-red-600 to-red-700 text-white font-medium">
+            <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium">
               Premium
             </Badge>
 
