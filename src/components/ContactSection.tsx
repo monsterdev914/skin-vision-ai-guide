@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
-
 const ContactSection = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -14,15 +12,16 @@ const ContactSection = () => {
     subject: "",
     message: ""
   });
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const {
+      name,
+      value
+    } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Form submitted:", formData);
@@ -34,9 +33,7 @@ const ContactSection = () => {
       message: ""
     });
   };
-
-  return (
-    <section id="contact" className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+  return <section id="contact" className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <Badge variant="secondary" className="mb-6 bg-blue-100 text-blue-700 border-blue-200">
@@ -110,29 +107,13 @@ const ContactSection = () => {
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                         Full Name
                       </label>
-                      <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        placeholder="Your full name"
-                      />
+                      <Input id="name" name="name" type="text" required value={formData.name} onChange={handleInputChange} placeholder="Your full name" />
                     </div>
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                         Email Address
                       </label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        placeholder="your.email@example.com"
-                      />
+                      <Input id="email" name="email" type="email" required value={formData.email} onChange={handleInputChange} placeholder="your.email@example.com" />
                     </div>
                   </div>
 
@@ -140,36 +121,17 @@ const ContactSection = () => {
                     <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
                       Subject
                     </label>
-                    <Input
-                      id="subject"
-                      name="subject"
-                      type="text"
-                      required
-                      value={formData.subject}
-                      onChange={handleInputChange}
-                      placeholder="What's this about?"
-                    />
+                    <Input id="subject" name="subject" type="text" required value={formData.subject} onChange={handleInputChange} placeholder="What's this about?" />
                   </div>
 
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
                       Message
                     </label>
-                    <Textarea
-                      id="message"
-                      name="message"
-                      required
-                      value={formData.message}
-                      onChange={handleInputChange}
-                      placeholder="Tell us more about your inquiry..."
-                      className="min-h-[120px]"
-                    />
+                    <Textarea id="message" name="message" required value={formData.message} onChange={handleInputChange} placeholder="Tell us more about your inquiry..." className="min-h-[120px]" />
                   </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90"
-                  >
+                  <Button type="submit" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 font-medium">
                     <Send className="mr-2 h-4 w-4" />
                     Send Message
                   </Button>
@@ -179,8 +141,6 @@ const ContactSection = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default ContactSection;
