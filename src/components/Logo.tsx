@@ -17,9 +17,9 @@ const Logo = ({ className = "w-10 h-10", size = 40 }: LogoProps) => {
       >
         <defs>
           <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#0000FF" />
-            <stop offset="50%" stopColor="#0000FF" />
-            <stop offset="100%" stopColor="#0000FF" />
+            <stop offset="0%" stopColor="#ef4444" />
+            <stop offset="50%" stopColor="#dc2626" />
+            <stop offset="100%" stopColor="#b91c1c" />
           </linearGradient>
           <filter id="glow">
             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -67,7 +67,7 @@ const Logo = ({ className = "w-10 h-10", size = 40 }: LogoProps) => {
       </svg>
       
       {/* Modern accent ring */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-500/20 to-red-600/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
     </div>
   );
 };
