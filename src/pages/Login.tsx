@@ -110,7 +110,7 @@ const Login = () => {
                 </Link>
               </div>
               
-              <Button type="submit" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 font-medium">
+              <Button type="submit" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 font-medium w-full ">
                 Sign In
               </Button>
             </form>
