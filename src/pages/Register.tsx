@@ -8,7 +8,6 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Heart, Eye, EyeOff } from "lucide-react";
 import Logo from "@/components/Logo";
-
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -114,7 +113,7 @@ const Register = () => {
                 </Label>
               </div>
               
-              <Button type="submit" disabled={!formData.agreeToTerms} className="w-full h-12 bg-gradient-to-r from-blue-600 to-pink-700 text-white hover:opacity-90 ">
+              <Button type="submit" disabled={!formData.agreeToTerms} className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 font-medium w-full h-12">
                 Create Account
               </Button>
             </form>
