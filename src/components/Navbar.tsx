@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -91,7 +92,7 @@ const Navbar = () => {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white font-medium">
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium">
                     Get Started
                   </Button>
                 </Link>
