@@ -1,44 +1,88 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import Logo from "@/components/Logo";
-import { Heart, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Heart, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   });
   const [errors, setErrors] = useState({
     email: "",
-    password: ""
+    password: "",
+    general: ""
   });
+
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
   const validateForm = () => {
     const newErrors = {
       email: "",
-      password: ""
+      password: "",
+      general: ""
     };
+
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
     }
+
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
+
     setErrors(newErrors);
     return !newErrors.email && !newErrors.password;
   };
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log("Login attempt:", formData);
+    
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    setErrors({ email: "", password: "", general: "" });
+
+    try {
+      await login(formData.email, formData.password);
+      
+      toast({
+        title: "Welcome back!",
+        description: "You have been successfully signed in.",
+        duration: 3000,
+      });
+
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      
+      setErrors(prev => ({
+        ...prev,
+        general: error.message || "Invalid email or password. Please try again."
+      }));
+
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid email or password. Please try again.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
   return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4">
@@ -65,6 +109,13 @@ const Login = () => {
           
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {errors.general && (
+                <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  {errors.general}
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="email" className={errors.email ? "text-destructive" : ""}>
                   Email
@@ -110,8 +161,19 @@ const Login = () => {
                 </Link>
               </div>
               
-              <Button type="submit" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 font-medium w-full h-12 ">
-                Sign In
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 font-medium w-full h-12"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing In...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
             
