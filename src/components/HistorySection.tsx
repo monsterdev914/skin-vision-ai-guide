@@ -177,7 +177,7 @@ const HistorySection = () => {
                     if (progressSummary.conditionSummary.length === 0) return '0%';
                     const confidence = progressSummary.conditionSummary[0].averageConfidence;
                     if (confidence === null || confidence === undefined || isNaN(confidence)) return '0%';
-                    return `${Math.round(confidence)}%`;
+                    return `${Math.round(confidence * 100)}%`;
                   })()}
                 </div>
                 <div className="text-sm text-gray-600">Average Confidence</div>
@@ -260,7 +260,7 @@ const HistorySection = () => {
                       <div className="flex items-center space-x-4 text-sm text-gray-600">
                         <span>{formatDate(analysis.createdAt)}</span>
                         <span>•</span>
-                        <span>{Math.round(analysis.topPrediction.confidence)}% confidence</span>
+                        <span>{Math.round(analysis.topPrediction.confidence * 100)}% confidence</span>
                         <span>•</span>
                         <span className="capitalize">{analysis.analysisType || 'comprehensive'}</span>
                       </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ const Login = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const validateForm = () => {
@@ -58,7 +59,10 @@ const Login = () => {
     setErrors({ email: "", password: "", general: "" });
 
     try {
-      await login(formData.email, formData.password);
+      await login({
+        email: formData.email,
+        password: formData.password
+      });
       
       toast({
         title: "Welcome back!",
@@ -66,7 +70,9 @@ const Login = () => {
         duration: 3000,
       });
 
-      navigate("/dashboard");
+      // Redirect to the original location or dashboard
+      const from = location.state?.from?.pathname || "/dashboard";
+      navigate(from, { replace: true });
     } catch (error: any) {
       console.error("Login failed:", error);
       

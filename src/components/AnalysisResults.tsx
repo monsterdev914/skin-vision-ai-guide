@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { AlertCircle, CheckCircle, Heart, ShoppingCart, Calendar, Clock } from "lucide-react";
-import { aiService, ComprehensiveAnalysisResult } from "@/lib/api";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { aiService } from "@/lib/api";
 
 interface AnalysisResultsProps {
   imageUrl: string;
@@ -14,33 +13,50 @@ interface AnalysisResultsProps {
 }
 
 const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisResultsProps) => {
-  const [analysisData, setAnalysisData] = useState<ComprehensiveAnalysisResult | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [analysisData, setAnalysisData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasAnalyzed, setHasAnalyzed] = useState(false); // Prevent repeated analysis
+
+  // Reset analysis flag when image changes
+  useEffect(() => {
+    setHasAnalyzed(false);
+    setAnalysisData(null);
+    setError(null);
+  }, [imageFile]);
 
   useEffect(() => {
     const performAnalysis = async () => {
       if (!imageFile) {
         setError("No image file provided for analysis");
-        setIsLoading(false);
         return;
       }
 
-      try {
-        setIsLoading(true);
-        setError(null);
+      // Prevent repeated analysis of the same image
+      if (hasAnalyzed || loading) {
+        return;
+      }
 
-        // Get comprehensive analysis (analysis + treatment recommendations)
+      setLoading(true);
+      setError(null);
+      setHasAnalyzed(true); // Mark as analyzed
+
+      try {
+        console.log("Starting comprehensive analysis...");
+        
+        // Call comprehensive analysis without hardcoded age - let AI detect it
         const response = await aiService.getComprehensiveAnalysis(imageFile, {
-          userAge: 25, // You can get this from user profile
-          skinType: "combination", // You can get this from user profile
-          currentProducts: ["cleanser", "moisturizer"] // You can get this from user profile
+          // Remove hardcoded userAge - let AI detect age from image
+          skinType: 'normal', // Could get this from user profile
+          currentProducts: [] // Could get this from user profile
         });
 
         if (response.success && response.data) {
+          console.log("Analysis successful:", response.data);
           setAnalysisData(response.data);
-          // Call the completion callback if provided
-          onAnalysisComplete?.();
+          if (onAnalysisComplete) {
+            onAnalysisComplete();
+          }
         } else {
           setError(response.message || "Analysis failed");
         }
@@ -48,29 +64,21 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
         console.error("Analysis error:", err);
         setError(err instanceof Error ? err.message : "Analysis failed");
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     performAnalysis();
-  }, [imageFile]);
+  }, [imageFile]); // Remove onAnalysisComplete from dependencies to prevent loops
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-blue-600 animate-spin" />
-            <span>Analyzing Your Skin...</span>
-          </CardTitle>
-          <CardDescription>
+      <Card className="w-full max-w-4xl">
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Analyzing Your Image</h3>
+          <p className="text-gray-600 text-center">
             Our AI is processing your image and generating personalized recommendations
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Progress value={75} className="w-full" />
-          <p className="text-sm text-gray-600 text-center mt-2">
-            This may take a few moments...
           </p>
         </CardContent>
       </Card>
@@ -79,22 +87,11 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
 
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-red-600">
-            <AlertCircle className="w-5 h-5" />
-            <span>Analysis Failed</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-red-600">{error}</p>
-          <Button 
-            onClick={() => window.location.reload()} 
-            className="mt-4"
-            variant="outline"
-          >
-            Try Again
-          </Button>
+      <Card className="w-full max-w-4xl border-red-200">
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <AlertCircle className="h-8 w-8 text-red-500 mb-4" />
+          <h3 className="text-lg font-semibold text-red-700 mb-2">Analysis Failed</h3>
+          <p className="text-red-600 text-center">{error}</p>
         </CardContent>
       </Card>
     );
@@ -104,198 +101,154 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
     return null;
   }
 
-  const { analysis, treatment } = analysisData;
+  const { analysis, treatment, ageDetection } = analysisData;
+  const topCondition = analysis.topPrediction;
+
+  const getSeverityColor = (confidence: number) => {
+    if (confidence > 0.7) return "bg-red-500";
+    if (confidence > 0.4) return "bg-yellow-500";
+    return "bg-green-500";
+  };
+
+  const getSeverityText = (confidence: number) => {
+    if (confidence > 0.7) return "High";
+    if (confidence > 0.4) return "Moderate";
+    return "Low";
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-4xl space-y-6">
+      {/* Analysis Summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <span>Analysis Complete</span>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            Analysis Complete
           </CardTitle>
-          <CardDescription>
-            AI-powered analysis with personalized treatment plan
-          </CardDescription>
         </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {/* Confidence Score */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Confidence Score</span>
-              <span className="text-sm text-gray-600">
-                {Math.round(analysis.topPrediction.confidence * 100)}%
-              </span>
+        <CardContent className="space-y-4">
+          {/* Primary Condition */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Primary Condition Detected</h3>
+              <p className="text-gray-600 capitalize">
+                {topCondition.condition.replace(/_/g, ' ')}
+              </p>
             </div>
-            <Progress value={analysis.topPrediction.confidence * 100} className="w-full" />
-          </div>
-
-          {/* Detected Condition */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-900 mb-2">Detected Condition</h4>
-            <div className="flex items-center justify-between">
-              <span className="text-blue-800 font-medium capitalize">
-                {analysis.topPrediction.condition.replace('_', ' ')}
-              </span>
-              <Badge variant={
-                treatment.recommendation.severity === "mild" ? "secondary" : 
-                treatment.recommendation.severity === "moderate" ? "default" : "destructive"
-              }>
-                {treatment.recommendation.severity}
+            <div className="text-right">
+              <Badge variant="outline" className={`${getSeverityColor(topCondition.confidence)} text-white`}>
+                {getSeverityText(topCondition.confidence)} Confidence
               </Badge>
+              <p className="text-sm text-gray-500 mt-1">
+                {Math.round(topCondition.confidence * 100)}% match
+              </p>
             </div>
           </div>
 
-          {/* Treatment Overview */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h4 className="font-semibold text-green-900 mb-2">Treatment Overview</h4>
-            <p className="text-green-800 text-sm">{treatment.recommendation.overview}</p>
+          {/* Confidence Progress */}
+          <div>
+            <div className="flex justify-between text-sm mb-2">
+              <span>Confidence Level</span>
+              <span>{Math.round(topCondition.confidence * 100)}%</span>
+            </div>
+            <Progress value={topCondition.confidence * 100} className="h-2" />
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Detailed Treatment Plan */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Heart className="w-5 h-5 text-red-500" />
-            <span>Your Treatment Plan</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="steps" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="steps">Treatment Steps</TabsTrigger>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
-              <TabsTrigger value="warnings">Important Notes</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="steps" className="space-y-4 mt-4">
-              {treatment.recommendation.steps.map((step, index) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h5 className="font-semibold">Step {step.step}: {step.title}</h5>
-                    <Badge variant="outline">{step.frequency}</Badge>
+          {/* All Predictions */}
+          <div>
+            <h4 className="font-medium mb-3">All Detected Conditions</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {analysis.allPredictions.map((prediction: any, index: number) => (
+                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="capitalize text-sm">
+                    {prediction.condition.replace(/_/g, ' ')}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{prediction.percentage}</span>
+                    <Progress value={prediction.confidence * 100} className="w-16 h-2" />
                   </div>
-                  <p className="text-gray-700 text-sm mb-3">{step.description}</p>
-                  
-                  {step.products && step.products.length > 0 && (
-                    <div className="mb-3">
-                      <p className="text-sm font-medium mb-2">Recommended Products:</p>
-                      <div className="space-y-1">
-                        {step.products.map((product, pidx) => (
-                          <div key={pidx} className="flex items-center justify-between bg-gray-50 rounded px-3 py-2">
-                            <span className="text-sm">{product}</span>
-                            <Button size="sm" variant="outline">
-                              <ShoppingCart className="w-3 h-3 mr-1" />
-                              Shop
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {step.tips && step.tips.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium mb-1">Tips:</p>
-                      <ul className="text-sm text-gray-600 list-disc list-inside">
-                        {step.tips.map((tip, tidx) => (
-                          <li key={tidx}>{tip}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
                 </div>
               ))}
-            </TabsContent>
-            
-            <TabsContent value="timeline" className="space-y-4 mt-4">
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h5 className="font-semibold">Total Duration</h5>
-                  <Badge className="bg-gradient-to-r from-blue-600 to-purple-600">
-                    {treatment.timeline.totalDuration}
-                  </Badge>
-                </div>
-                
-                <div className="space-y-4">
-                  {treatment.timeline.phases.map((phase, index) => (
-                    <div key={index} className="border-l-4 border-blue-500 pl-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h6 className="font-medium">{phase.title}</h6>
-                        <span className="text-sm text-gray-600">{phase.timeframe}</span>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-2">{phase.description}</p>
-                      
-                      {phase.expectedChanges.length > 0 && (
-                        <div className="mb-2">
-                          <p className="text-sm font-medium text-green-700">Expected Changes:</p>
-                          <ul className="text-sm text-green-600 list-disc list-inside">
-                            {phase.expectedChanges.map((change, cidx) => (
-                              <li key={cidx}>{change}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      {phase.milestones.length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-blue-700">Milestones:</p>
-                          <ul className="text-sm text-blue-600 list-disc list-inside">
-                            {phase.milestones.map((milestone, midx) => (
-                              <li key={midx}>{milestone}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="warnings" className="space-y-4 mt-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <div className="flex items-start space-x-2 mb-3">
-                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-                  <div>
-                    <h5 className="font-semibold text-amber-900">Important Warnings</h5>
-                    <ul className="text-sm text-amber-800 mt-2 space-y-1">
-                      {treatment.recommendation.warnings.map((warning, index) => (
-                        <li key={index}>• {warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-start space-x-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                  <div>
-                    <h5 className="font-semibold text-red-900">Professional Advice</h5>
-                    <p className="text-sm text-red-800 mt-1">
-                      {treatment.recommendation.professionalAdvice}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
-      <div className="flex space-x-3">
-        <Button className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-          Save Analysis
-        </Button>
-        <Button variant="outline" className="flex-1">
-          Share Results
-        </Button>
-      </div>
+      {/* Treatment Recommendations */}
+      {treatment?.recommendation && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-500" />
+              Personalized Treatment Plan
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <p className="text-blue-900 font-medium mb-2">Treatment Overview</p>
+              <p className="text-blue-800 text-sm">{treatment.recommendation.overview}</p>
+            </div>
+
+            <div>
+              <h4 className="font-medium mb-3">Recommended Steps</h4>
+              <div className="space-y-3">
+                {treatment.recommendation.steps.map((step: any, index: number) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-medium text-blue-600">
+                        {step.step}
+                      </div>
+                      <div className="flex-1">
+                        <h5 className="font-medium mb-1">{step.title}</h5>
+                        <p className="text-sm text-gray-600 mb-2">{step.description}</p>
+                        
+                        {step.products && step.products.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-xs font-medium text-gray-700 mb-1">Recommended Products:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {step.products.map((product: string, pIndex: number) => (
+                                <Badge key={pIndex} variant="secondary" className="text-xs">
+                                  {product}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex gap-4 text-xs text-gray-500">
+                          <span>Frequency: {step.frequency}</span>
+                          <span>Duration: {step.duration}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {treatment.recommendation.warnings && treatment.recommendation.warnings.length > 0 && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <h5 className="font-medium text-amber-800 mb-2">Important Warnings</h5>
+                <ul className="text-sm text-amber-700 space-y-1">
+                  {treatment.recommendation.warnings.map((warning: string, index: number) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <span className="text-amber-500 mt-0.5">•</span>
+                      {warning}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {treatment.recommendation.professionalAdvice && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h5 className="font-medium text-green-800 mb-2">Professional Advice</h5>
+                <p className="text-sm text-green-700">{treatment.recommendation.professionalAdvice}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

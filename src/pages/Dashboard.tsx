@@ -113,7 +113,7 @@ const Dashboard = () => {
                     {loadingAnalytics ? (
                       <Loader2 className="w-6 h-6 animate-spin" />
                     ) : (
-                      `${Math.round(analyticsData?.averageConfidence || 0)}%`
+                      `${Math.round((analyticsData?.averageConfidence || 0) * 100)}%`
                     )}
                   </p>
                   {analyticsData && !loadingAnalytics && (
@@ -257,7 +257,7 @@ const Dashboard = () => {
                         className="w-16 h-2"
                       />
                       <span className="text-sm font-medium">
-                        {Math.round(analyticsData.averageConfidence || 0)}%
+                        {Math.round((analyticsData.averageConfidence || 0) * 100)}%
                       </span>
                     </div>
                   </div>
