@@ -85,9 +85,7 @@ const HistorySection = () => {
   const getImageUrl = (analysis: AnalysisHistoryItem) => {
     // First check if backend provided imageUrl
     if ((analysis as any).imageUrl) {
-      const baseUrl = import.meta.env.MODE === 'production' 
-        ? (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457')
-        : 'http://localhost:3457';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457';
       return `${baseUrl}${(analysis as any).imageUrl}`;
     }
     
@@ -97,9 +95,7 @@ const HistorySection = () => {
       return null;
     }
     
-    const baseUrl = import.meta.env.MODE === 'production' 
-      ? (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457')
-      : 'http://localhost:3457';
+    const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457';
     
     // Handle relative paths properly
     const cleanPath = analysis.imagePath.startsWith('/') ? analysis.imagePath.slice(1) : analysis.imagePath;
