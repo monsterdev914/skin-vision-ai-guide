@@ -7,6 +7,7 @@ import { Calendar, TrendingUp, Brain, Heart, Shield, FileText, Activity, Trash2,
 import { AnalysisHistoryItem, historyService } from "@/lib/api";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { getServerBaseUrl } from "@/lib/utils";
 
 interface AnalysisDetailDialogProps {
   analysis: AnalysisHistoryItem | null;
@@ -93,18 +94,14 @@ const AnalysisDetailDialog = ({ analysis, open, onOpenChange, onAnalysisDeleted 
   const getImageUrl = (analysis: AnalysisHistoryItem) => {
     // First check if backend provided imageUrl
     if ((analysis as any).imageUrl) {
-      const baseUrl = import.meta.env.MODE === 'production' 
-        ? (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457')
-        : 'http://localhost:3457';
+      const baseUrl = getServerBaseUrl();
       return `${baseUrl}${(analysis as any).imageUrl}`;
     }
     
     // Fallback to constructing from imagePath
     if (!analysis.imagePath) return null;
     
-    const baseUrl = import.meta.env.MODE === 'production' 
-      ? (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457')
-      : 'http://localhost:3457';
+    const baseUrl = getServerBaseUrl();
     
     // Handle relative paths properly
     const cleanPath = analysis.imagePath.startsWith('/') ? analysis.imagePath.slice(1) : analysis.imagePath;

@@ -83,9 +83,16 @@ const HistorySection = () => {
   };
 
   const getImageUrl = (analysis: AnalysisHistoryItem) => {
+    // Get the server base URL (without /api suffix for uploads)
+    const getServerBaseUrl = () => {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457/api';
+      // Remove /api suffix if present, since uploads are served at root /uploads
+      return backendUrl.replace('/api', '');
+    };
+    
     // First check if backend provided imageUrl
     if ((analysis as any).imageUrl) {
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457';
+      const baseUrl = getServerBaseUrl();
       return `${baseUrl}${(analysis as any).imageUrl}`;
     }
     
@@ -95,7 +102,7 @@ const HistorySection = () => {
       return null;
     }
     
-    const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457';
+    const baseUrl = getServerBaseUrl();
     
     // Handle relative paths properly
     const cleanPath = analysis.imagePath.startsWith('/') ? analysis.imagePath.slice(1) : analysis.imagePath;
