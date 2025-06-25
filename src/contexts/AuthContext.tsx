@@ -48,11 +48,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // API service functions
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
-
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457/api';
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('auth_token');
-  
   const config: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
@@ -63,6 +61,7 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   };
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+
   
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Network error' }));

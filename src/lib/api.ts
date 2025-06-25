@@ -207,15 +207,12 @@ export interface AuthResponse {
 // Create axios instance  
 const api = axios.create({
     // If production, use the production backend url
-    baseURL: (import.meta as any).env.MODE === 'production' 
-        ? (import.meta as any).env.VITE_BACKEND_URL 
-        : 'http://localhost:3457/api',
+    baseURL: (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3457/api',
     headers: {
         'Content-Type': 'application/json'
     },
     timeout: 30000, // 30 seconds timeout for AI operations
 });
-
 // Request interceptor for adding auth token  
 api.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
