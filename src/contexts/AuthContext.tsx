@@ -48,9 +48,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // API service functions
-const API_BASE_URL = import.meta.env.MODE === 'production' 
-  ? import.meta.env.VITE_BACKEND_URL 
-  : import.meta.env.VITE_BACKEND_URL;
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('auth_token');
