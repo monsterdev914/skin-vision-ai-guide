@@ -8,6 +8,7 @@ import { AnalysisHistoryItem, historyService } from "@/lib/api";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getServerBaseUrl } from "@/lib/utils";
+import ImageWithOverlays from "@/components/ImageWithOverlays";
 
 interface AnalysisDetailDialogProps {
   analysis: AnalysisHistoryItem | null;
@@ -137,24 +138,14 @@ const AnalysisDetailDialog = ({ analysis, open, onOpenChange, onAnalysisDeleted 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Analysis Summary */}
           <div className="space-y-4">
-            {/* Analysis Image */}
+            {/* Analysis Image with Coordinates */}
             {getImageUrl(analysis) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Analysis Image</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <img
-                    src={getImageUrl(analysis)!}
-                    alt={`Analysis for ${analysis.topPrediction.condition}`}
-                    className="w-full h-64 object-cover rounded-lg"
-                    onError={(e) => {
-                      // Hide image if it fails to load
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                </CardContent>
-              </Card>
+              <ImageWithOverlays
+                imageUrl={getImageUrl(analysis)!}
+                detectedFeatures={(analysis as any).detectedFeatures}
+                imageMetadata={(analysis as any).imageMetadata}
+                className="w-full"
+              />
             )}
 
             <Card>

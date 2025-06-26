@@ -1,7 +1,9 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, Upload, X, Loader2 } from "lucide-react";
+import CameraCapture from "./CameraCapture";
 
 interface ImageUploadCardProps {
   onImageUpload: (imageUrl: string, imageFile: File) => void;
@@ -183,62 +185,95 @@ const ImageUploadCard = ({ onImageUpload }: ImageUploadCardProps) => {
     );
   }
 
+  const handleCameraCapture = (imageFile: File, imageUrl: string) => {
+    setSelectedImage(imageUrl);
+    setSelectedFile(imageFile);
+    onImageUpload(imageUrl, imageFile);
+  };
+
+  const handleCameraError = (error: string) => {
+    console.error('Camera error:', error);
+    // You can add more error handling here if needed
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Camera className="w-5 h-5 text-blue-600" />
-          <span>Upload Skin Image</span>
+          <span>Capture or Upload Image</span>
         </CardTitle>
         <CardDescription>
-          Take a clear photo of your skin concern for accurate AI analysis
+          Use your camera or upload a photo of your skin for AI analysis
         </CardDescription>
       </CardHeader>
       <CardContent>
         {!selectedImage ? (
-          <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              dragActive 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Upload your image
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Drag and drop your image here, or click to browse
-            </p>
+          <Tabs defaultValue="upload" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="upload" className="flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                Upload File
+              </TabsTrigger>
+              <TabsTrigger value="camera" className="flex items-center gap-2">
+                <Camera className="w-4 h-4" />
+                Use Camera
+              </TabsTrigger>
+            </TabsList>
             
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleInputChange}
-              className="hidden"
-            />
-            
-            <div className="space-y-3">
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90"
+            <TabsContent value="upload" className="mt-6">
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  dragActive 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
               >
-                <Upload className="w-4 h-4 mr-2" />
-                Choose File
-              </Button>
-              
-              <div className="text-xs text-gray-500">
-                Supported formats: JPG, PNG, WebP (Max 10MB)
-                <br />
-                Images will be automatically optimized to 150KB for fast analysis
+                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Upload your image
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Drag and drop your image here, or click to browse
+                </p>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleInputChange}
+                  className="hidden"
+                />
+                
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Choose File
+                  </Button>
+                  
+                  <div className="text-xs text-gray-500">
+                    Supported formats: JPG, PNG, WebP (Max 10MB)
+                    <br />
+                    Images will be automatically optimized to 150KB for fast analysis
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </TabsContent>
+            
+            <TabsContent value="camera" className="mt-6">
+              <CameraCapture 
+                onImageCapture={handleCameraCapture}
+                onError={handleCameraError}
+              />
+            </TabsContent>
+          </Tabs>
         ) : (
           <div className="space-y-4">
             <div className="relative">

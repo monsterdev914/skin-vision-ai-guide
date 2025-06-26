@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import AnalysisDetailDialog from "./AnalysisDetailDialog";
 import { historyService, AnalysisHistoryItem, AnalysisHistoryResponse, ProgressSummary } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { getServerBaseUrl } from "@/lib/utils";
 
 const HistorySection = () => {
   const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisHistoryItem | null>(null);
@@ -84,12 +85,7 @@ const HistorySection = () => {
 
   const getImageUrl = (analysis: AnalysisHistoryItem) => {
     // Get the server base URL (without /api suffix for uploads)
-    const getServerBaseUrl = () => {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457/api';
-      // Remove /api suffix if present, since uploads are served at root /uploads
-      return backendUrl.replace('/api', '');
-    };
-    
+
     // First check if backend provided imageUrl
     if ((analysis as any).imageUrl) {
       const baseUrl = getServerBaseUrl();

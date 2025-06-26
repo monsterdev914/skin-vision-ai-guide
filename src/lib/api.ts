@@ -15,6 +15,42 @@ export interface FaceConditionPrediction {
   [condition: string]: number;
 }
 
+// Coordinate detection types
+export interface Coordinate {
+  x: number;
+  y: number;
+}
+
+export interface BoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface DetectedFeature {
+  condition: string;
+  confidence: number;
+  coordinates?: Coordinate[];
+  boundingBox?: BoundingBox;
+  area?: number; // percentage of affected area
+  severity?: 'mild' | 'moderate' | 'severe';
+  description?: string;
+}
+
+export interface ImageMetadata {
+  width: number;
+  height: number;
+  format: string;
+  analyzedRegion?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    description: string;
+  };
+}
+
 export interface FaceAnalysisResult {
   topPrediction: {
     condition: string;
@@ -26,6 +62,8 @@ export interface FaceAnalysisResult {
     percentage: string;
   }>;
   rawPredictions: FaceConditionPrediction;
+  detectedFeatures?: DetectedFeature[]; // Spatial feature detection
+  imageMetadata?: ImageMetadata; // Image dimensions and format
 }
 
 export interface TreatmentStep {
@@ -100,6 +138,8 @@ export interface AnalysisHistoryItem {
     condition: string;
     confidence: number;
   };
+  detectedFeatures?: DetectedFeature[]; // Spatial feature detection
+  imageMetadata?: ImageMetadata; // Image dimensions and format
   treatmentRecommendation: TreatmentRecommendation;
   treatmentTimeline: TreatmentTimeline;
   personalizedNotes: string[];
@@ -403,12 +443,59 @@ class ApiService {
         });
     }
 
+    async getComprehensiveAnalysisWithCoordinates(
+        imageFile: File,
+        userDetails?: {
+            userAge?: number;
+            skinType?: string;
+            currentProducts?: string[];
+        }
+    ): Promise<ApiResponse<ComprehensiveAnalysisResult>> {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        
+        if (userDetails?.userAge) {
+            formData.append('userAge', userDetails.userAge.toString());
+        }
+        if (userDetails?.skinType) {
+            formData.append('skinType', userDetails.skinType);
+        }
+        if (userDetails?.currentProducts) {
+            userDetails.currentProducts.forEach(product => {
+                formData.append('currentProducts', product);
+            });
+        }
+
+        return api.post('/ai/comprehensive-analysis-coordinates', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    }
+
     async getAvailableConditions(): Promise<ApiResponse<{ conditions: string[]; total: number }>> {
         return api.get('/ai/conditions');
     }
 
     async checkAIHealth(): Promise<ApiResponse<{ service: string; status: string; timestamp: string }>> {
         return api.get('/ai/health');
+    }
+
+    // Validate if image contains suitable skin area for analysis
+    async validateSkinArea(imageFile: File): Promise<ApiResponse<{
+        hasFace: boolean;
+        skinAreaDetected: boolean;
+        faceRegion?: { x: number; y: number; width: number; height: number };
+        suitable: boolean;
+    }>> {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+
+        return api.post('/ai/validate-skin', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
     }
 
     // User Management Methods
@@ -525,6 +612,8 @@ export const aiService = {
     getTreatmentRecommendation: apiService.getTreatmentRecommendation.bind(apiService),
     getTreatmentTimeline: apiService.getTreatmentTimeline.bind(apiService),
     getComprehensiveAnalysis: apiService.getComprehensiveAnalysis.bind(apiService),
+    getComprehensiveAnalysisWithCoordinates: apiService.getComprehensiveAnalysisWithCoordinates.bind(apiService),
+    validateSkinArea: apiService.validateSkinArea.bind(apiService),
     getAvailableConditions: apiService.getAvailableConditions.bind(apiService),
     checkHealth: apiService.checkAIHealth.bind(apiService),
 };

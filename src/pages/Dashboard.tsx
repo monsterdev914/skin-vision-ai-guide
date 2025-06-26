@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analyticsData, setAnalyticsData] = useState<DashboardAnalytics | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const { toast } = useToast();
 
   const fetchDashboardAnalytics = async () => {
@@ -305,8 +306,10 @@ const Dashboard = () => {
                     imageUrl={selectedImage} 
                     imageFile={selectedImageFile}
                     onAnalysisComplete={() => {
-                      // Refresh analytics when analysis is complete
+                      // Refresh analytics and history when analysis is complete
+                      console.log("Analysis completed - refreshing dashboard data");
                       fetchDashboardAnalytics();
+                      setHistoryRefreshKey(prev => prev + 1);
                     }}
                   />
                 )}
@@ -326,7 +329,7 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="history">
-            <HistorySection />
+            <HistorySection key={historyRefreshKey} />
           </TabsContent>
         </Tabs>
       </div>

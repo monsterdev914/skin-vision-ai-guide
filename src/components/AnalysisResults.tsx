@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, CheckCircle, AlertCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { aiService } from "@/lib/api";
+import ImageWithOverlays from "@/components/ImageWithOverlays";
 
 interface AnalysisResultsProps {
   imageUrl: string;
@@ -42,10 +43,32 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
       setHasAnalyzed(true); // Mark as analyzed
 
       try {
-        console.log("Starting comprehensive analysis...");
+        console.log("Step 1: Validating skin area in image...");
         
-        // Call comprehensive analysis without hardcoded age - let AI detect it
-        const response = await aiService.getComprehensiveAnalysis(imageFile, {
+        // First validate if the image contains suitable skin area
+        const skinValidation = await aiService.validateSkinArea(imageFile);
+        
+        if (!skinValidation.success) {
+          throw new Error(`Image validation failed: ${skinValidation.message}`);
+        }
+
+        if (!skinValidation.data?.suitable) {
+          const issues = [];
+          if (!skinValidation.data?.hasFace) {
+            issues.push("No clear face detected");
+          }
+          if (!skinValidation.data?.skinAreaDetected) {
+            issues.push("Insufficient skin area visible");
+          }
+          
+          throw new Error(`Image not suitable for analysis: ${issues.join(', ')}. Please ensure the image shows a clear, well-lit face with visible skin areas.`);
+        }
+
+        console.log("✅ Skin validation passed - proceeding with analysis");
+        console.log("Step 2: Starting comprehensive analysis with coordinates...");
+        
+        // Call comprehensive analysis with coordinates - let AI detect age from image
+        const response = await aiService.getComprehensiveAnalysisWithCoordinates(imageFile, {
           // Remove hardcoded userAge - let AI detect age from image
           skinType: 'normal', // Could get this from user profile
           currentProducts: [] // Could get this from user profile
@@ -53,8 +76,12 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
 
         if (response.success && response.data) {
           console.log("Analysis successful:", response.data);
+          console.log("Analysis imageMetadata:", response.data.analysis?.imageMetadata);
           setAnalysisData(response.data);
+          
+          // Force refresh of history section after successful analysis
           if (onAnalysisComplete) {
+            console.log("Calling onAnalysisComplete to refresh history");
             onAnalysisComplete();
           }
         } else {
@@ -173,6 +200,16 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
           </div>
         </CardContent>
       </Card>
+
+      {/* Image Visualization with Coordinates */}
+      {analysis.detectedFeatures && analysis.detectedFeatures.length > 0 && (
+        <ImageWithOverlays
+          imageUrl={imageUrl}
+          detectedFeatures={analysis.detectedFeatures}
+          imageMetadata={analysis.imageMetadata}
+          className="w-full"
+        />
+      )}
 
       {/* Treatment Recommendations */}
       {treatment?.recommendation && (
