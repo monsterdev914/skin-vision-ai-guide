@@ -31,16 +31,81 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
   const [cameraReady, setCameraReady] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [skinValidation, setSkinValidation] = useState<any>(null);
+  const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
 
-  // Camera constraints for high quality
+  // Camera constraints for high quality - made more flexible
   const constraints = {
     video: {
-      width: { ideal: 1920, min: 1280 },
-      height: { ideal: 1080, min: 720 },
-      facingMode: 'user', // Front camera
-      frameRate: { ideal: 30 },
+      width: { ideal: 1280, min: 640 },
+      height: { ideal: 720, min: 480 },
+      facingMode: { ideal: 'user' }, // Prefer front camera but fallback to any
+      frameRate: { ideal: 30, min: 15 },
     }
   };
+
+  // Fallback constraints if primary fails
+  const fallbackConstraints = {
+    video: {
+      width: { ideal: 640 },
+      height: { ideal: 480 },
+      frameRate: { ideal: 15 },
+    }
+  };
+
+  // Basic constraints as last resort
+  const basicConstraints = {
+    video: true
+  };
+
+  // Check camera permissions and available devices
+  const checkCameraPermissions = useCallback(async () => {
+    try {
+      // Check if Permissions API is available
+      if ('permissions' in navigator) {
+        const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+        setPermissionStatus(permission.state);
+        
+        permission.onchange = () => {
+          setPermissionStatus(permission.state);
+        };
+      }
+
+      // Enumerate available cameras
+      if (navigator.mediaDevices?.enumerateDevices) {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter(device => device.kind === 'videoinput');
+        setAvailableCameras(cameras);
+        console.log('Available cameras:', cameras);
+      }
+    } catch (error) {
+      console.error('Error checking camera permissions:', error);
+    }
+  }, []);
+
+  // Request camera permissions explicitly
+  const requestCameraPermission = useCallback(async () => {
+    try {
+      setError(null);
+      
+      // Simple permission request
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach(track => track.stop()); // Stop immediately
+      setPermissionStatus('granted');
+      
+      // Re-check available cameras after permission granted
+      await checkCameraPermissions();
+      
+      return true;
+    } catch (error) {
+      console.error('Permission request failed:', error);
+      setPermissionStatus('denied');
+      if (error instanceof Error) {
+        setError(`Permission denied: ${error.message}`);
+      }
+      return false;
+    }
+  }, [checkCameraPermissions]);
 
   const startCamera = useCallback(async () => {
     try {
@@ -48,21 +113,88 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
       
       // Check if camera is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Camera access is not supported in this browser');
+        throw new Error('Camera access is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.');
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      // Check if we're on HTTPS or localhost (required for camera access)
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        throw new Error('Camera access requires HTTPS. Please access this site over HTTPS or use localhost for testing.');
+      }
+
+      let stream: MediaStream;
+      
+      // Try primary constraints first
+      try {
+        console.log('Trying primary camera constraints...');
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (primaryError) {
+        console.log('Primary constraints failed, trying fallback...', primaryError);
+        
+        // Try fallback constraints
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        } catch (fallbackError) {
+          console.log('Fallback constraints failed, trying basic...', fallbackError);
+          
+          // Try basic constraints as last resort
+          stream = await navigator.mediaDevices.getUserMedia(basicConstraints);
+        }
+      }
+      
       streamRef.current = stream;
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
+          console.log('Camera stream loaded successfully');
           setCameraReady(true);
           setIsStreaming(true);
         };
+        
+        // Add error handler for video element
+        videoRef.current.onerror = (e) => {
+          console.error('Video element error:', e);
+          setError('Failed to display camera stream');
+        };
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to access camera';
+      console.error('Camera access error:', err);
+      
+      let errorMessage = 'Failed to access camera';
+      
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          errorMessage = 'Camera access denied. Please allow camera permissions and try again.';
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          errorMessage = 'No camera found. Please connect a camera and try again.';
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          errorMessage = 'Camera is already in use by another application. Please close other apps using the camera and try again.';
+        } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+          errorMessage = 'Camera does not meet the required specifications. Trying with basic settings...';
+          
+          // Try one more time with very basic constraints
+          try {
+            const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            streamRef.current = basicStream;
+            
+            if (videoRef.current) {
+              videoRef.current.srcObject = basicStream;
+              videoRef.current.onloadedmetadata = () => {
+                setCameraReady(true);
+                setIsStreaming(true);
+              };
+            }
+            return; // Success with basic constraints
+          } catch {
+            errorMessage = 'Camera specifications not supported. Please try a different camera or device.';
+          }
+        } else if (err.name === 'NotSupportedError') {
+          errorMessage = 'Camera not supported in this browser. Please use Chrome, Firefox, or Safari.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       onError?.(errorMessage);
     }
@@ -227,6 +359,11 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
     };
   }, [stopCamera]);
 
+  // Check permissions on component mount
+  useEffect(() => {
+    checkCameraPermissions();
+  }, [checkCameraPermissions]);
+
   const getQualityIcon = (status: 'good' | 'warning' | 'error') => {
     switch (status) {
       case 'good': return <CheckCircle className="w-4 h-4 text-green-500" />;
@@ -286,10 +423,78 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
           </Alert>
         )}
 
+        {/* Camera Permission Status */}
+        {permissionStatus !== 'unknown' && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex items-center gap-2">
+                <Camera className="w-4 h-4" />
+                <span className="font-medium">Camera Permission</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {permissionStatus === 'granted' ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <Badge variant="default" className="bg-green-100 text-green-800">Granted</Badge>
+                  </>
+                ) : permissionStatus === 'denied' ? (
+                  <>
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <Badge variant="destructive">Denied</Badge>
+                  </>
+                ) : (
+                  <>
+                    <Info className="w-4 h-4 text-blue-500" />
+                    <Badge variant="secondary">Not Granted</Badge>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Camera Info */}
+            {availableCameras.length > 0 && (
+              <div className="text-sm text-gray-600">
+                {availableCameras.length} camera{availableCameras.length !== 1 ? 's' : ''} detected
+              </div>
+            )}
+
+            {/* Permission Guidance */}
+            {permissionStatus === 'denied' && (
+              <Alert>
+                <Info className="w-4 h-4" />
+                <AlertDescription>
+                  Camera access was denied. To enable:
+                  <br />• Click the camera icon in your browser's address bar
+                  <br />• Select "Allow" for camera permissions
+                  <br />• Refresh the page and try again
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {permissionStatus === 'prompt' && (
+              <Alert>
+                <Info className="w-4 h-4" />
+                <AlertDescription>
+                  Camera permission is required. Click "Request Permission" to allow camera access.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
+
         {/* Camera Controls */}
         <div className="flex gap-2 justify-center">
-          {!isStreaming ? (
-            <Button onClick={startCamera} className="flex items-center gap-2">
+          {permissionStatus === 'prompt' || permissionStatus === 'denied' ? (
+            <Button onClick={requestCameraPermission} className="flex items-center gap-2">
+              <Camera className="w-4 h-4" />
+              Request Camera Permission
+            </Button>
+          ) : !isStreaming ? (
+            <Button 
+              onClick={startCamera} 
+              disabled={permissionStatus === 'denied' || availableCameras.length === 0}
+              className="flex items-center gap-2"
+            >
               <Camera className="w-4 h-4" />
               Start Camera
             </Button>
@@ -329,6 +534,21 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
             </Button>
           )}
         </div>
+
+        {/* Additional Troubleshooting */}
+        {(permissionStatus === 'denied' || (error && error.includes('denied'))) && (
+          <Alert>
+            <Info className="w-4 h-4" />
+            <AlertDescription>
+              <strong>Troubleshooting Camera Issues:</strong>
+              <br />1. Make sure you're using HTTPS (not HTTP)
+              <br />2. Check if another app is using your camera
+              <br />3. Try refreshing the page
+              <br />4. Check browser settings for camera permissions
+              <br />5. Try a different browser (Chrome, Firefox, or Safari work best)
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Camera Preview */}
         {isStreaming && !capturedImage && (
