@@ -6,6 +6,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Camera, CameraOff, RotateCcw, CheckCircle, AlertTriangle, Info, Loader2 } from 'lucide-react';
 import { aiService } from '@/lib/api';
 
+// Extend Navigator interface for legacy getUserMedia support
+interface LegacyNavigator extends Navigator {
+  getUserMedia?: (constraints: MediaStreamConstraints, successCallback: (stream: MediaStream) => void, errorCallback: (error: Error) => void) => void;
+  webkitGetUserMedia?: (constraints: MediaStreamConstraints, successCallback: (stream: MediaStream) => void, errorCallback: (error: Error) => void) => void;
+  mozGetUserMedia?: (constraints: MediaStreamConstraints, successCallback: (stream: MediaStream) => void, errorCallback: (error: Error) => void) => void;
+  msGetUserMedia?: (constraints: MediaStreamConstraints, successCallback: (stream: MediaStream) => void, errorCallback: (error: Error) => void) => void;
+}
+
 interface CameraCaptureProps {
   onImageCapture: (imageFile: File, imageUrl: string) => void;
   onError?: (error: string) => void;
@@ -61,25 +69,44 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
   // Check camera permissions and available devices
   const checkCameraPermissions = useCallback(async () => {
     try {
+      // Check basic browser support first
+      if (!navigator) {
+        console.log('Navigator not available');
+        return;
+      }
+
       // Check if Permissions API is available
       if ('permissions' in navigator) {
-        const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
-        setPermissionStatus(permission.state);
-        
-        permission.onchange = () => {
+        try {
+          const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
           setPermissionStatus(permission.state);
-        };
+          
+          permission.onchange = () => {
+            setPermissionStatus(permission.state);
+          };
+        } catch (permError) {
+          console.log('Permissions API query failed:', permError);
+          setPermissionStatus('unknown');
+        }
       }
 
       // Enumerate available cameras
       if (navigator.mediaDevices?.enumerateDevices) {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(device => device.kind === 'videoinput');
-        setAvailableCameras(cameras);
-        console.log('Available cameras:', cameras);
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const cameras = devices.filter(device => device.kind === 'videoinput');
+          setAvailableCameras(cameras);
+          console.log('Available cameras:', cameras);
+        } catch (enumError) {
+          console.log('Device enumeration failed:', enumError);
+        }
+      } else {
+        console.log('MediaDevices API not available');
+        setPermissionStatus('unknown');
       }
     } catch (error) {
       console.error('Error checking camera permissions:', error);
+      setPermissionStatus('unknown');
     }
   }, []);
 
@@ -87,6 +114,21 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
   const requestCameraPermission = useCallback(async () => {
     try {
       setError(null);
+      
+      // Check for media devices support first
+      if (!navigator.mediaDevices) {
+        // Try to polyfill for older browsers
+        const legacyNav = navigator as LegacyNavigator;
+        if (legacyNav.getUserMedia || legacyNav.webkitGetUserMedia || legacyNav.mozGetUserMedia) {
+          throw new Error('Your browser supports camera access but uses an older API. Please update your browser to the latest version for the best experience.');
+        } else {
+          throw new Error('Camera access is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.');
+        }
+      }
+      
+      if (!navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia is not supported in this browser. Please update to a newer version.');
+      }
       
       // Simple permission request
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -102,6 +144,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
       setPermissionStatus('denied');
       if (error instanceof Error) {
         setError(`Permission denied: ${error.message}`);
+      } else {
+        setError('Permission denied: Unknown error occurred');
       }
       return false;
     }
@@ -111,14 +155,40 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
     try {
       setError(null);
       
-      // Check if camera is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Camera access is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.');
+      // Comprehensive compatibility checks
+      if (!navigator) {
+        throw new Error('Navigator API is not available. This might be a server-side rendering issue.');
+      }
+      
+      // Check for basic media devices support
+      if (!navigator.mediaDevices) {
+        // Try legacy API fallback
+        const legacyNav = navigator as LegacyNavigator;
+        const legacyGetUserMedia = legacyNav.getUserMedia || 
+                                  legacyNav.webkitGetUserMedia || 
+                                  legacyNav.mozGetUserMedia || 
+                                  legacyNav.msGetUserMedia;
+        
+        if (legacyGetUserMedia) {
+          throw new Error('Your browser uses an older camera API. Please update your browser to Chrome 53+, Firefox 36+, or Safari 11+ for the best experience.');
+        } else {
+          throw new Error('Camera access is not supported in this browser. Please use Chrome, Firefox, Safari, or Edge.');
+        }
       }
 
-      // Check if we're on HTTPS or localhost (required for camera access)
-      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-        throw new Error('Camera access requires HTTPS. Please access this site over HTTPS or use localhost for testing.');
+      // Check getUserMedia method
+      if (!navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera access method (getUserMedia) is not available. Please update your browser.');
+      }
+
+      // Check if we're in a secure context (HTTPS or localhost)
+      if (!window.isSecureContext) {
+        throw new Error('Camera access requires a secure connection (HTTPS). Please access this site over HTTPS or use localhost for testing.');
+      }
+
+      // Additional environment checks
+      if (typeof window === 'undefined') {
+        throw new Error('Camera access is only available in browser environments.');
       }
 
       let stream: MediaStream;
@@ -174,7 +244,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
           
           // Try one more time with very basic constraints
           try {
-            const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const basicStream = await navigator.mediaDevices!.getUserMedia({ video: true });
             streamRef.current = basicStream;
             
             if (videoRef.current) {
@@ -190,6 +260,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
           }
         } else if (err.name === 'NotSupportedError') {
           errorMessage = 'Camera not supported in this browser. Please use Chrome, Firefox, or Safari.';
+        } else if (err.name === 'SecurityError') {
+          errorMessage = 'Camera access blocked for security reasons. Please enable camera access in your browser settings.';
         } else {
           errorMessage = err.message;
         }
