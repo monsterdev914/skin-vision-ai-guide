@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, Upload, X, Loader2 } from "lucide-react";
-import CameraCapture from "./CameraCapture";
+import CameraCapture from "../components/CameraCapture";
 
 interface ImageUploadCardProps {
   onImageUpload: (imageUrl: string, imageFile: File) => void;
