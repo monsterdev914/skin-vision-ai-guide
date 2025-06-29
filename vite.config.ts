@@ -19,4 +19,14 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: [
+      "@mediapipe/face_detection",
+      "@mediapipe/camera_utils"
+    ],
+  },
+  define: {
+    // Define global variables if needed by MediaPipe
+    global: "globalThis",
+  },
 }));
