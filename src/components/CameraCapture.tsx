@@ -1,7 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import { useFaceDetection } from 'react-use-face-detection';
-import { FaceDetection } from '@mediapipe/face_detection';
+import { FaceDetection, Results } from '@mediapipe/face_detection';
 import { Camera } from '@mediapipe/camera_utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,13 @@ interface QualityCheck {
   face: 'good' | 'warning' | 'error';
 }
 
+interface BoundingBox {
+  xCenter: number;
+  yCenter: number;
+  width: number;
+  height: number;
+}
+
 const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, testingMode: propTestingMode = false }) => {
   const webcamRef = useRef<Webcam>(null);
   
@@ -39,26 +45,97 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
   const [showCameraList, setShowCameraList] = useState(false);
   const [webcamKey, setWebcamKey] = useState(0); // Key to force webcam re-mount
   const [faceDetectionEnabled, setFaceDetectionEnabled] = useState(!testingMode); // Enable by default in normal mode
+  
+  // Face detection state
+  const [faceDetection, setFaceDetection] = useState<FaceDetection | null>(null);
+  const [camera, setCamera] = useState<Camera | null>(null);
+  const [isFaceDetectionLoading, setIsFaceDetectionLoading] = useState(false);
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [facesDetected, setFacesDetected] = useState(0);
+  const [boundingBox, setBoundingBox] = useState<BoundingBox[]>([]);
 
-  // Initialize face detection
-  const faceDetection = new FaceDetection({
-    locateFile: (file) => {
-      return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
-    },
-  });
+  // Initialize MediaPipe Face Detection
+  useEffect(() => {
+    if (!faceDetectionEnabled) return;
 
-  // Initialize camera utility
-  const camera = (cameraOptions: any) => new Camera(cameraOptions.inputElement, cameraOptions);
+    const initializeFaceDetection = async () => {
+      setIsFaceDetectionLoading(true);
+      
+      try {
+        const faceDetectionModel = new FaceDetection({
+          locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
+          },
+        });
 
-  // Face detection hook - for validation only
-  const { boundingBox, isLoading: isFaceDetectionLoading, detected: faceDetected, facesDetected } = useFaceDetection({
-    faceDetection,
-    camera,
-    mirrored: true,
-    handleOnResults: (results) => {
-      console.log('Face detection results:', results);
-    },
-  });
+        faceDetectionModel.setOptions({
+          model: 'short',
+          minDetectionConfidence: 0.5,
+        });
+
+        faceDetectionModel.onResults((results: Results) => {
+          const faces = results.detections || [];
+          setFacesDetected(faces.length);
+          setFaceDetected(faces.length > 0);
+          
+          // Convert detections to bounding boxes
+          const boxes: BoundingBox[] = faces.map(detection => {
+            const bbox = detection.boundingBox;
+            return {
+              xCenter: (bbox.xCenter || 0) * 100,
+              yCenter: (bbox.yCenter || 0) * 100,
+              width: (bbox.width || 0) * 100,
+              height: (bbox.height || 0) * 100,
+            };
+          });
+          setBoundingBox(boxes);
+        });
+
+        setFaceDetection(faceDetectionModel);
+        setIsFaceDetectionLoading(false);
+      } catch (err) {
+        console.error('Failed to initialize face detection:', err);
+        setIsFaceDetectionLoading(false);
+      }
+    };
+
+    initializeFaceDetection();
+
+    return () => {
+      if (faceDetection) {
+        faceDetection.close();
+      }
+      if (camera) {
+        camera.stop();
+      }
+    };
+  }, [faceDetectionEnabled]);
+
+  // Start camera for face detection
+  useEffect(() => {
+    if (!faceDetection || !webcamRef.current?.video || !cameraReady || !faceDetectionEnabled) {
+      return;
+    }
+
+    const videoElement = webcamRef.current.video;
+    
+    const cameraInstance = new Camera(videoElement, {
+      onFrame: async () => {
+        if (faceDetection && videoElement) {
+          await faceDetection.send({ image: videoElement });
+        }
+      },
+      width: 640,
+      height: 480
+    });
+
+    setCamera(cameraInstance);
+    cameraInstance.start();
+
+    return () => {
+      cameraInstance.stop();
+    };
+  }, [faceDetection, cameraReady, faceDetectionEnabled]);
 
   // Video constraints - relaxed for testing mode
   const getVideoConstraints = () => {
