@@ -6,13 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Camera as CameraIcon, CameraOff, RotateCcw, CheckCircle, AlertTriangle, Info, Loader2, TestTube, User, UserX } from 'lucide-react';
+import { Camera as CameraIcon, CameraOff, RotateCcw, CheckCircle, AlertTriangle, Info, Loader2, User, UserX } from 'lucide-react';
 import { aiService } from '@/lib/api';
 
 interface CameraCaptureProps {
   onImageCapture: (imageFile: File, imageUrl: string) => void;
   onError?: (error: string) => void;
-  testingMode?: boolean; // New prop for testing mode
 }
 
 interface QualityCheck {
@@ -29,7 +28,7 @@ interface BoundingBox {
   height: number;
 }
 
-const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, testingMode: propTestingMode = false }) => {
+const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }) => {
   const webcamRef = useRef<Webcam>(null);
   
   const [isStreaming, setIsStreaming] = useState(false);
@@ -40,11 +39,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
   const [isValidating, setIsValidating] = useState(false);
   const [skinValidation, setSkinValidation] = useState<any>(null);
   const [cameraReady, setCameraReady] = useState(false);
-  const [testingMode, setTestingMode] = useState(propTestingMode); // Internal testing mode state
-  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
-  const [showCameraList, setShowCameraList] = useState(false);
   const [webcamKey, setWebcamKey] = useState(0); // Key to force webcam re-mount
-  const [faceDetectionEnabled, setFaceDetectionEnabled] = useState(!testingMode); // Enable by default in normal mode
+  const [faceDetectionEnabled, setFaceDetectionEnabled] = useState(true); // Always enabled
   
   // Face detection state
   const [faceDetection, setFaceDetection] = useState<FaceDetection | null>(null);
@@ -137,29 +133,17 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
     };
   }, [faceDetection, cameraReady, faceDetectionEnabled]);
 
-  // Video constraints - relaxed for testing mode
+  // Video constraints
   const getVideoConstraints = () => {
-    if (testingMode) {
-      // Very relaxed constraints for virtual cameras and testing
-      return {
-        width: { ideal: 640 },
-        height: { ideal: 480 },
-        facingMode: { ideal: 'user' }, // Make facingMode optional
-        frameRate: { ideal: 15 },
-        // Remove minimum constraints that might cause issues
-      };
-    } else {
-      // Production constraints - more reasonable minimums
-      return {
-        width: { ideal: 1280, min: 640 }, // Reduced minimum from 1280 to 640
-        height: { ideal: 720, min: 480 }, // Reduced minimum from 720 to 480
-        facingMode: { ideal: 'user' }, // Make facingMode optional in normal mode too
-        frameRate: { ideal: 30, min: 10 }, // Reduced minimum from 15 to 10
-      };
-    }
+    return {
+      width: { ideal: 1280, min: 640 },
+      height: { ideal: 720, min: 480 },
+      facingMode: { ideal: 'user' },
+      frameRate: { ideal: 30, min: 10 },
+    };
   };
 
-  // Ultra-minimal constraints for testing mode fallback
+  // Ultra-minimal constraints for fallback
   const getMinimalConstraints = () => {
     return {}; // No constraints at all - just grab any camera
   };
@@ -197,11 +181,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
           break;
         case 'NotFoundError':
         case 'DevicesNotFoundError':
-          if (testingMode) {
-            errorMessage = 'No camera found. In testing mode, make sure your virtual camera (OBS, ManyCam, etc.) is running and set as the default camera device.';
-          } else {
-            errorMessage = 'No camera found. Please connect a camera and try again.';
-          }
+          errorMessage = 'No camera found. Please connect a camera and try again.';
           break;
         case 'NotReadableError':
         case 'TrackStartError':
@@ -225,7 +205,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
     }
 
     if (shouldRetryWithMinimalConstraints) {
-      console.log(`🔄 ${testingMode ? 'Testing' : 'Normal'} mode: Retrying with minimal constraints...`);
+      console.log(`🔄 Retrying with minimal constraints...`);
       // Force webcam component to remount with no constraints
       setWebcamKey(prev => prev + 1);
       setError('Retrying with minimal camera constraints...');
@@ -235,72 +215,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
     setError(errorMessage);
     setIsStreaming(false);
     onError?.(errorMessage);
-  }, [onError, testingMode]);
-
-  // New function to try fallback camera access in testing mode
-  const tryFallbackCamera = useCallback(async () => {
-    if (!testingMode) return;
-    
-    console.log('🧪 Testing mode: Trying fallback camera access...');
-    
-    try {
-      // Try to get any available camera without constraints
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      
-      // If successful, we know there's a camera available
-      // Stop this stream and let webcam component handle it
-      stream.getTracks().forEach(track => track.stop());
-      
-      console.log('✅ Fallback camera access successful');
-      setError(null);
-      return true;
-    } catch (fallbackError) {
-      console.error('❌ Fallback camera access failed:', fallbackError);
-      return false;
-    }
-  }, [testingMode]);
-
-  // Function to list available cameras
-  const listAvailableCameras = useCallback(async () => {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const cameras = devices.filter(device => device.kind === 'videoinput');
-      setAvailableCameras(cameras);
-      console.log('📹 Available cameras:', cameras);
-      return cameras;
-    } catch (error) {
-      console.error('Failed to enumerate cameras:', error);
-      setAvailableCameras([]);
-      return [];
-    }
-  }, []);
-
-  // Enhanced start camera function
-  const startCamera = useCallback(async () => {
-    setIsStreaming(true);
-    setError(null);
-    
-    // In testing mode, first list available cameras and try fallback
-    if (testingMode) {
-      console.log('🧪 Testing mode: Checking available cameras...');
-      const cameras = await listAvailableCameras();
-      
-      if (cameras.length === 0) {
-        setError('No camera devices found. Please ensure your virtual camera software (OBS, ManyCam, etc.) is running and properly installed.');
-        setIsStreaming(false);
-        return;
-      }
-      
-      console.log(`📹 Found ${cameras.length} camera device(s):`, cameras.map(c => c.label || 'Unknown Camera'));
-      
-      const hasCamera = await tryFallbackCamera();
-      if (!hasCamera) {
-        setError(`Found ${cameras.length} camera device(s) but unable to access. Check if your virtual camera is running and not in use by another application.`);
-        setIsStreaming(false);
-        return;
-      }
-    }
-  }, [testingMode, tryFallbackCamera, listAvailableCameras]);
+  }, [onError]);
 
   const captureImage = useCallback(async () => {
     if (!webcamRef.current || !cameraReady) {
@@ -324,8 +239,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
       const quality = assessImageQuality(imageSrc);
       setQualityChecks(quality);
 
-      // Check for face detection errors in normal mode
-      if (!testingMode && faceDetectionEnabled && quality.face === 'error') {
+      // Check for face detection errors
+      if (faceDetectionEnabled && quality.face === 'error') {
         setError('No face detected in the captured image. Please ensure your face is clearly visible and try again.');
         setIsCapturing(false);
         return;
@@ -340,43 +255,27 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
         lastModified: Date.now(),
       });
 
-      // Validate with backend AI - skip in testing mode if desired
-      if (testingMode) {
-        console.log('🧪 Testing mode: Skipping AI validation');
-        // Mock successful validation
-        setSkinValidation({
-          success: true,
-          data: {
-            suitable: true,
-            hasFace: true,
-            skinAreaDetected: true,
-            faceRegion: true
-          },
-          message: 'Testing mode: Validation skipped'
-        });
-        onImageCapture(file, imageSrc);
-      } else {
-        setIsValidating(true);
-        try {
-          console.log('Validating captured image with AI...');
-          const validation = await aiService.validateSkinArea(file);
-          setSkinValidation(validation);
-          
-          if (validation.success && validation.data?.suitable) {
-            console.log('✅ Camera image validation passed');
-            onImageCapture(file, imageSrc);
-          } else {
-            console.log('⚠️ Camera image validation failed:', validation.message);
-            // Still allow capture but show warning
-            onImageCapture(file, imageSrc);
-          }
-        } catch (validationError) {
-          console.error('Camera image validation error:', validationError);
-          // Still allow capture if validation fails
+      // Validate with backend AI
+      setIsValidating(true);
+      try {
+        console.log('Validating captured image with AI...');
+        const validation = await aiService.validateSkinArea(file);
+        setSkinValidation(validation);
+        
+        if (validation.success && validation.data?.suitable) {
+          console.log('✅ Camera image validation passed');
           onImageCapture(file, imageSrc);
-        } finally {
-          setIsValidating(false);
+        } else {
+          console.log('⚠️ Camera image validation failed:', validation.message);
+          // Still allow capture but show warning
+          onImageCapture(file, imageSrc);
         }
+      } catch (validationError) {
+        console.error('Camera image validation error:', validationError);
+        // Still allow capture if validation fails
+        onImageCapture(file, imageSrc);
+      } finally {
+        setIsValidating(false);
       }
 
     } catch (err) {
@@ -386,7 +285,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
     } finally {
       setIsCapturing(false);
     }
-  }, [cameraReady, onImageCapture, onError, testingMode, getScreenshot]);
+  }, [cameraReady, onImageCapture, onError, getScreenshot, faceDetectionEnabled]);
 
   const retakePhoto = useCallback(() => {
     setCapturedImage(null);
@@ -405,6 +304,11 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
     setSkinValidation(null);
     setIsValidating(false);
     setWebcamKey(0); // Reset webcam key
+  }, []);
+
+  const startCamera = useCallback(() => {
+    setIsStreaming(true);
+    setError(null);
   }, []);
 
   const forceRestartCamera = useCallback(() => {
@@ -470,11 +374,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
       face: 'good'
     };
 
-    // In testing mode, be more lenient
-    if (testingMode) {
-      return assessment; // Always return good for testing
-    }
-
     // Use face detection results for face quality assessment
     if (faceDetectionEnabled && !isFaceDetectionLoading) {
       if (!faceDetected || facesDetected === 0) {
@@ -486,14 +385,14 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
       }
     }
 
-    // For normal mode, we'll still default to good for other metrics
+    // Default to good for other metrics
     // This is where you could add actual image analysis for:
     // - Resolution detection
     // - Brightness/contrast analysis  
     // - Blur detection
     
     return assessment;
-  }, [testingMode, faceDetectionEnabled, isFaceDetectionLoading, faceDetected, facesDetected]);
+  }, [faceDetectionEnabled, isFaceDetectionLoading, faceDetected, facesDetected]);
 
   return (
     <Card className="w-full max-w-2xl">
@@ -501,76 +400,19 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
         <CardTitle className="flex items-center gap-2">
           <CameraIcon className="w-5 h-5" />
           Camera Capture
-          {testingMode && (
-            <Badge variant="secondary" className="ml-2">
-              <TestTube className="w-3 h-3 mr-1" />
-              Testing Mode
-            </Badge>
-          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Testing Mode Toggle */}
-        <div className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
-          <div className="flex items-center gap-2">
-            <TestTube className="w-4 h-4" />
-            <div>
-              <p className="text-sm font-medium">Testing Mode</p>
-              <p className="text-xs text-gray-600">
-                Relaxed constraints for virtual cameras and development
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {testingMode && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCameraList(!showCameraList)}
-                className="text-xs"
-              >
-                {showCameraList ? 'Hide' : 'Show'} Cameras
-              </Button>
-            )}
-            <Button
-              variant={testingMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setTestingMode(!testingMode);
-                setFaceDetectionEnabled(testingMode); // Enable face detection when leaving testing mode
-                // Reset states when toggling mode
-                stopCamera();
-              }}
-            >
-              {testingMode ? 'ON' : 'OFF'}
-            </Button>
-          </div>
-        </div>
+        {/* Instructions */}
+        <Alert>
+          <Info className="w-4 h-4" />
+          <AlertDescription>
+            Position your face in good lighting, ensure the camera is steady, and capture a clear image for the best analysis results.
+          </AlertDescription>
+        </Alert>
 
-        {/* Face Detection Toggle */}
-        {!testingMode && (
-          <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <div>
-                <p className="text-sm font-medium">Face Detection</p>
-                <p className="text-xs text-gray-600">
-                  Real-time face detection for quality validation
-                </p>
-              </div>
-            </div>
-            <Button
-              variant={faceDetectionEnabled ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFaceDetectionEnabled(!faceDetectionEnabled)}
-            >
-              {faceDetectionEnabled ? 'ON' : 'OFF'}
-            </Button>
-          </div>
-        )}
-
-        {/* Real-time Face Detection Status */}
-        {isStreaming && !capturedImage && faceDetectionEnabled && (
+        {/* Face Detection Status */}
+        {isStreaming && !capturedImage && (
           <div className="p-3 border rounded-lg bg-blue-50">
             <div className="flex items-center gap-2 mb-2">
               {isFaceDetectionLoading ? (
@@ -580,11 +422,11 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
               ) : (
                 <UserX className="w-4 h-4 text-red-600" />
               )}
-              <h4 className="text-sm font-medium">Live Face Detection</h4>
+              <h4 className="text-sm font-medium">Face Detection</h4>
             </div>
             
             {isFaceDetectionLoading ? (
-              <p className="text-xs text-gray-600">Loading face detection...</p>
+              <p className="text-xs text-gray-600">Loading face detection model...</p>
             ) : (
               <div className="space-y-1">
                 <p className="text-xs">
@@ -607,29 +449,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
           </div>
         )}
 
-        {/* Testing Mode Info */}
-        {testingMode && (
-          <Alert>
-            <TestTube className="w-4 h-4" />
-            <AlertDescription>
-              <strong>Testing Mode Active:</strong> Using relaxed camera constraints (640x480 min), 
-              simplified quality checks, and optional AI validation. Perfect for virtual cameras and development.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Instructions */}
-        <Alert>
-          <Info className="w-4 h-4" />
-          <AlertDescription>
-            {testingMode ? (
-              "Testing mode: Any camera resolution supported. Perfect for virtual cameras like OBS, ManyCam, or browser extensions."
-            ) : (
-              "Position your face in good lighting, ensure the camera is steady, and capture a clear image for the best analysis results."
-            )}
-          </AlertDescription>
-        </Alert>
-
         {/* Error Display */}
         {error && (
           <Alert variant="destructive">
@@ -642,13 +461,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
                 <br />• Allow camera permissions when prompted
                 <br />• Close other apps that might be using your camera
                 <br />• Try refreshing the page
-                {testingMode && (
-                  <>
-                    <br />• <strong>Testing mode:</strong> Try enabling your virtual camera (OBS, ManyCam, etc.)
-                    <br />• Check if your virtual camera is running and set as default
-                    <br />• Some virtual cameras need to be started BEFORE opening the browser
-                  </>
-                )}
                 <br />• Try the "Force Restart" button below to retry with minimal constraints
               </div>
               <div className="mt-3">
@@ -665,53 +477,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
           </Alert>
         )}
 
-        {/* Camera List (Testing Mode Only) */}
-        {testingMode && showCameraList && (
-          <div className="p-3 border rounded-lg bg-blue-50">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-medium">Available Camera Devices</h4>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={listAvailableCameras}
-                className="text-xs"
-              >
-                Refresh
-              </Button>
-            </div>
-            {availableCameras.length === 0 ? (
-              <div className="text-sm text-gray-600">
-                <p>No cameras detected. If you're using a virtual camera:</p>
-                <ul className="mt-1 ml-4 text-xs list-disc">
-                  <li>Make sure OBS Virtual Camera, ManyCam, or similar software is running</li>
-                  <li>Check that virtual camera is enabled in the software</li>
-                  <li>Try restarting your browser after starting the virtual camera</li>
-                  <li>Some virtual cameras need to be set as the default camera</li>
-                </ul>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {availableCameras.map((camera, index) => (
-                  <div key={camera.deviceId} className="flex items-center gap-2 text-sm">
-                    <Badge variant="outline" className="text-xs">
-                      {index + 1}
-                    </Badge>
-                    <span className="flex-1">
-                      {camera.label || `Camera ${index + 1} (${camera.deviceId.slice(0, 8)}...)`}
-                    </span>
-                    {camera.label.toLowerCase().includes('obs') && (
-                      <Badge variant="secondary" className="text-xs">OBS</Badge>
-                    )}
-                    {camera.label.toLowerCase().includes('manycam') && (
-                      <Badge variant="secondary" className="text-xs">ManyCam</Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Camera Controls */}
         <div className="flex gap-2 justify-center">
           {!isStreaming ? (
@@ -726,16 +491,16 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
             <>
               <Button 
                 onClick={captureImage} 
-                disabled={!cameraReady || isCapturing || (isValidating && !testingMode) || (!testingMode && faceDetectionEnabled && !faceDetected)}
+                disabled={!cameraReady || isCapturing || isValidating || (faceDetectionEnabled && !faceDetected)}
                 className="flex items-center gap-2"
               >
-                {isCapturing || (isValidating && !testingMode) ? (
+                {isCapturing || isValidating ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <CameraIcon className="w-4 h-4" />
                 )}
-                {isCapturing ? 'Capturing...' : (isValidating && !testingMode) ? 'Validating...' : 
-                 (!testingMode && faceDetectionEnabled && !faceDetected) ? 'No Face Detected' : 'Capture Photo'}
+                {isCapturing ? 'Capturing...' : isValidating ? 'Validating...' : 
+                 (faceDetectionEnabled && !faceDetected) ? 'No Face Detected' : 'Capture Photo'}
               </Button>
               <Button 
                 variant="outline" 
@@ -807,7 +572,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
                     {webcamKey > 0 ? (
                       'Retrying with minimal constraints...'
                     ) : (
-                      testingMode ? 'Loading camera (testing mode)...' : 'Loading camera...'
+                      'Loading camera...'
                     )}
                   </p>
                 </div>
@@ -816,8 +581,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
             {cameraReady && (
               <div className="absolute top-2 right-2">
                 <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  <TestTube className="w-3 h-3 mr-1" />
-                  {webcamKey > 0 ? 'Minimal Mode' : (testingMode ? 'Test Mode' : 'Normal Mode')}
+                  {webcamKey > 0 ? 'Minimal Mode' : 'Normal Mode'}
                 </Badge>
               </div>
             )}
@@ -901,21 +665,16 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
               <div className="space-y-3">
                 <h4 className="font-medium">
                   AI Skin Analysis Validation
-                  {testingMode && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      Testing Mode
-                    </Badge>
-                  )}
                 </h4>
                 
                 {skinValidation.success && skinValidation.data?.suitable ? (
                   <Alert>
                     <CheckCircle className="w-4 h-4" />
                     <AlertDescription className="text-green-700">
-                      ✅ {testingMode ? 'Testing mode: Mock validation passed!' : 'Perfect! AI detected a clear face with suitable skin areas for analysis.'}
+                      ✅ Perfect! AI detected a clear face with suitable skin areas for analysis.
                       {skinValidation.data.faceRegion && (
                         <div className="mt-2 text-xs">
-                          {testingMode ? 'Mock face region detected.' : 'Face region detected at optimal position for skin analysis.'}
+                          Face region detected at optimal position for skin analysis.
                         </div>
                       )}
                     </AlertDescription>
@@ -925,16 +684,9 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError, 
                     <AlertTriangle className="w-4 h-4" />
                     <AlertDescription>
                       ⚠️ {skinValidation.message || 'AI validation found issues with the image'}
-                      {!testingMode && (
-                        <div className="mt-2 text-xs">
-                          Issues detected:
-                          {!skinValidation.data?.hasFace && <div>• No clear face detected</div>}
-                          {!skinValidation.data?.skinAreaDetected && <div>• Insufficient skin area visible</div>}
-                          <div className="mt-2">
-                            <strong>Suggestions:</strong> Ensure good lighting, position face clearly in frame, and remove any obstructions.
-                          </div>
-                        </div>
-                      )}
+                      <div className="mt-2 text-xs">
+                        <strong>Suggestions:</strong> Ensure good lighting, position face clearly in frame, and remove any obstructions.
+                      </div>
                     </AlertDescription>
                   </Alert>
                 )}
