@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, Upload, History, Settings, Heart, Brain, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Camera, Upload, History, Settings, Heart, Brain, CheckCircle, AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import ImageUploadCard from "@/components/ImageUploadCard";
 import AnalysisResults from "@/components/AnalysisResults";
 import HistorySection from "@/components/HistorySection";
@@ -20,6 +20,9 @@ const Dashboard = () => {
   const [analyticsData, setAnalyticsData] = useState<DashboardAnalytics | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState("analysis");
+  const [uploadKey, setUploadKey] = useState(0);
+  const [analysisKey, setAnalysisKey] = useState(0);
   const { toast } = useToast();
 
   const fetchDashboardAnalytics = async () => {
@@ -42,8 +45,32 @@ const Dashboard = () => {
     setSelectedImageFile(imageFile || null);
     setAnalysisComplete(false);
     
+    // Increment analysis key to force AnalysisResults to remount with fresh state
+    setAnalysisKey(prev => prev + 1);
+    
     // Start analysis immediately - the AnalysisResults component will handle the API call
     setAnalysisComplete(true);
+  };
+
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    
+    // Reset analysisComplete when switching to analysis tab to prevent automatic re-analysis
+    // but keep the image so users can see their previous analysis
+    if (newTab === "analysis" && (selectedImage || selectedImageFile)) {
+      console.log("Switching to analysis tab - preventing auto-rerun while preserving analysis results");
+      setAnalysisComplete(false);
+    }
+  };
+
+  const resetAnalysis = () => {
+    setSelectedImage(null);
+    setSelectedImageFile(null);
+    setAnalysisComplete(false);
+    setAnalysisProgress(0);
+    setUploadKey(prev => prev + 1); // Force ImageUploadCard to remount and reset its state
+    setAnalysisKey(prev => prev + 1); // Force AnalysisResults to remount with fresh state
+    console.log("Analysis state reset - ready for new analysis");
   };
 
   useEffect(() => {
@@ -120,7 +147,7 @@ const Dashboard = () => {
                   {analyticsData && !loadingAnalytics && (
                     <div className="mt-2">
                       <Progress 
-                        value={analyticsData.averageConfidence || 0} 
+                        value={(analyticsData.averageConfidence || 0) * 100} 
                         className="h-2"
                       />
                     </div>
@@ -196,113 +223,42 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Additional KPI Overview */}
-        {analyticsData && !loadingAnalytics && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Weekly Analysis Trend */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Weekly Analysis Trend</CardTitle>
-                <CardDescription>
-                  Your analysis activity over the past weeks
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {analyticsData.weeklyAnalyses && analyticsData.weeklyAnalyses.length > 0 ? (
-                    analyticsData.weeklyAnalyses.map((week, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{week.week}</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-32 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                              style={{ 
-                                width: `${Math.min(100, (week.count / Math.max(...analyticsData.weeklyAnalyses.map(w => w.count))) * 100)}%` 
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-sm font-medium text-gray-900 w-8">{week.count}</span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-500">No analysis data available</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Most Common Condition */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Analysis Summary</CardTitle>
-                <CardDescription>
-                  Your skin analysis overview
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Most Common Condition</span>
-                    <Badge variant="outline" className="font-normal">
-                      {analyticsData.mostCommonCondition || "None"}
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Analysis Accuracy</span>
-                    <div className="flex items-center space-x-2">
-                      <Progress 
-                        value={analyticsData.averageConfidence || 0} 
-                        className="w-16 h-2"
-                      />
-                      <span className="text-sm font-medium">
-                        {Math.round((analyticsData.averageConfidence || 0) * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Progress Status</span>
-                    <Badge variant={
-                      (analyticsData.improvementRate || 0) >= 75 ? "default" :
-                      (analyticsData.improvementRate || 0) >= 50 ? "secondary" :
-                      "destructive"
-                    }>
-                      {(analyticsData.improvementRate || 0) >= 75 ? "On Track" :
-                       (analyticsData.improvementRate || 0) >= 50 ? "Improving" :
-                       "Needs Focus"}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* Main Content */}
-        <Tabs defaultValue="analysis" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[300px]">
-            <TabsTrigger value="analysis" className="flex items-center space-x-2">
-              <Camera className="w-4 h-4" />
-              <span>New Analysis</span>
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center space-x-2">
-              <History className="w-4 h-4" />
-              <span>History</span>
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          <div className="flex items-center justify-between">
+            <TabsList className="grid w-full grid-cols-2 lg:w-[300px]">
+              <TabsTrigger value="analysis" className="flex items-center space-x-2">
+                <Camera className="w-4 h-4" />
+                <span>New Analysis</span>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center space-x-2">
+                <History className="w-4 h-4" />
+                <span>History</span>
+              </TabsTrigger>
+            </TabsList>
+            {activeTab === "analysis" && (selectedImage || selectedImageFile) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetAnalysis}
+                className="flex items-center space-x-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Start New Analysis</span>
+              </Button>
+            )}
+          </div>
 
           <TabsContent value="analysis" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Image Upload */}
-              <ImageUploadCard onImageUpload={handleImageUpload} />
+              <ImageUploadCard key={uploadKey} onImageUpload={handleImageUpload} />
               
               {/* Analysis Results */}
               <div className="space-y-6">
                 {selectedImage && selectedImageFile && analysisComplete && (
                   <AnalysisResults 
+                    key={analysisKey}
                     imageUrl={selectedImage} 
                     imageFile={selectedImageFile}
                     onAnalysisComplete={() => {

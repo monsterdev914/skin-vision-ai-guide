@@ -22,7 +22,8 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     include: [
       "@mediapipe/face_detection",
-      "@mediapipe/camera_utils"
+      "@mediapipe/camera_utils",
+      "@mediapipe/selfie_segmentation"
     ],
   },
   define: {

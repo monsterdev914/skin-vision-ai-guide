@@ -112,7 +112,7 @@ const HistorySection = () => {
     const conditionAnalyses = recentAnalyses.filter(a => a.condition === condition);
     
     if (conditionAnalyses.length < 2) {
-      return <Badge variant="secondary">Baseline</Badge>;
+      return <Badge variant="secondary" className="text-xs">Baseline</Badge>;
     }
 
     // Compare latest confidence with previous
@@ -121,12 +121,12 @@ const HistorySection = () => {
     
     if (latest.confidence > previous.confidence) {
       const improvement = ((latest.confidence - previous.confidence) / previous.confidence * 100).toFixed(0);
-      return <Badge className="bg-green-100 text-green-800">+{improvement}%</Badge>;
+      return <Badge className="bg-green-100 text-green-800 text-xs">+{improvement}%</Badge>;
     } else if (latest.confidence < previous.confidence) {
       const decline = ((previous.confidence - latest.confidence) / previous.confidence * 100).toFixed(0);
-      return <Badge className="bg-red-100 text-red-800">-{decline}%</Badge>;
+      return <Badge className="bg-red-100 text-red-800 text-xs">-{decline}%</Badge>;
     } else {
-      return <Badge variant="secondary">Stable</Badge>;
+      return <Badge variant="secondary" className="text-xs">Stable</Badge>;
     }
   };
 
@@ -136,42 +136,43 @@ const HistorySection = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-gray-600">Loading your analysis history...</span>
+      <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+        <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-sm sm:text-base text-gray-600 mt-2 text-center">Loading your analysis history...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-0">
       {/* Progress Overview */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3 sm:pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-              <CardTitle>Progress Overview</CardTitle>
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
+              <CardTitle className="text-base sm:text-lg">Progress Overview</CardTitle>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={handleRefresh}
               disabled={refreshing}
+              className="self-start sm:self-auto text-xs sm:text-sm"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
-          <CardDescription>
+          <CardDescription className="text-sm">
             Track your skin health journey over time
           </CardDescription>
         </CardHeader>
         <CardContent>
           {progressSummary ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600 mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+              <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-1 sm:mb-2">
                   {(() => {
                     if (progressSummary.conditionSummary.length === 0) return '0%';
                     const confidence = progressSummary.conditionSummary[0].averageConfidence;
@@ -179,16 +180,16 @@ const HistorySection = () => {
                     return `${Math.round(confidence * 100)}%`;
                   })()}
                 </div>
-                <div className="text-sm text-gray-600">Average Confidence</div>
+                <div className="text-xs sm:text-sm text-gray-600">Average Confidence</div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">
+              <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-1 sm:mb-2">
                   {progressSummary.totalAnalyses}
                 </div>
-                <div className="text-sm text-gray-600">Analyses Completed</div>
+                <div className="text-xs sm:text-sm text-gray-600">Analyses Completed</div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600 mb-2">
+              <div className="text-center p-3 sm:p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl sm:text-3xl font-bold text-purple-600 mb-1 sm:mb-2">
                   {progressSummary.dateRange.firstAnalysis && progressSummary.dateRange.lastAnalysis
                     ? Math.ceil((new Date(progressSummary.dateRange.lastAnalysis).getTime() - 
                          new Date(progressSummary.dateRange.firstAnalysis).getTime()) / 
@@ -196,127 +197,138 @@ const HistorySection = () => {
                     : 0
                   }
                 </div>
-                <div className="text-sm text-gray-600">Days Tracked</div>
+                <div className="text-xs sm:text-sm text-gray-600">Days Tracked</div>
               </div>
             </div>
           ) : (
-            <div className="text-center text-gray-500 py-4">
-              No analysis data available
+            <div className="text-center text-gray-500 py-6 sm:py-8">
+              <div className="text-sm sm:text-base">No analysis data available</div>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Analysis History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-blue-600" />
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
             <span>Analysis History</span>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             View all your previous skin analyses
           </CardDescription>
         </CardHeader>
         <CardContent>
           {historyData && historyData.history.length > 0 ? (
             <>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {historyData.history.map((analysis) => (
                   <div 
                     key={analysis._id} 
-                    className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-                      {getImageUrl(analysis) ? (
-                        <img
-                          src={getImageUrl(analysis)!}
-                          alt={`Analysis for ${analysis.topPrediction.condition}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Fallback to icon if image fails to load
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.parentElement!.innerHTML = '<div class="text-2xl">🔬</div>';
-                          }}
-                        />
-                      ) : (
-                        <div className="text-2xl">🔬</div>
-                      )}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-gray-900">
-                          {analysis.topPrediction.condition}
-                        </h3>
-                        {progressSummary && getImprovementBadge(
-                          analysis.topPrediction.condition, 
-                          progressSummary.recentAnalyses
+                    {/* Image and Title Section */}
+                    <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center flex-shrink-0">
+                        {getImageUrl(analysis) ? (
+                          <img
+                            src={getImageUrl(analysis)!}
+                            alt={`Analysis for ${analysis.topPrediction.condition}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to icon if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.parentElement!.innerHTML = '<div class="text-lg sm:text-2xl">🔬</div>';
+                            }}
+                          />
+                        ) : (
+                          <div className="text-lg sm:text-2xl">🔬</div>
                         )}
                       </div>
                       
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
-                        <span>{formatDate(analysis.createdAt)}</span>
-                        <span>•</span>
-                        <span>{Math.round(analysis.topPrediction.confidence * 100)}% confidence</span>
-                        <span>•</span>
-                        <span className="capitalize">{analysis.analysisType || 'comprehensive'}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2">
+                          <h3 className="font-medium text-sm sm:text-base text-gray-900 truncate">
+                            {analysis.topPrediction.condition}
+                          </h3>
+                          <div className="flex-shrink-0">
+                            {progressSummary && getImprovementBadge(
+                              analysis.topPrediction.condition, 
+                              progressSummary.recentAnalyses
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                          <span>{formatDate(analysis.createdAt)}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span>{Math.round(analysis.topPrediction.confidence * 100)}% confidence</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="capitalize">{analysis.analysisType || 'comprehensive'}</span>
+                        </div>
                       </div>
                     </div>
                     
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => handleViewAnalysis(analysis._id)}
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View
-                    </Button>
+                    {/* Action Button */}
+                    <div className="flex justify-end sm:justify-start sm:flex-shrink-0">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleViewAnalysis(analysis._id)}
+                        className="text-xs sm:text-sm w-full sm:w-auto"
+                      >
+                        <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        View Details
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
 
               {/* Pagination */}
               {historyData.pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                  <div className="text-sm text-gray-600">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 mt-4 sm:mt-6 pt-4 border-t">
+                  <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
                     Showing {((currentPage - 1) * historyData.pagination.limit + 1)} to{' '}
                     {Math.min(currentPage * historyData.pagination.limit, historyData.pagination.total)} of{' '}
                     {historyData.pagination.total} analyses
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center sm:justify-end space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={!historyData.pagination.hasPrevPage}
+                      className="text-xs sm:text-sm px-2 sm:px-3"
                     >
-                      <ChevronLeft className="w-4 h-4" />
-                      Previous
+                      <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Previous</span>
                     </Button>
-                    <span className="text-sm text-gray-600">
+                    <div className="px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm text-gray-600 bg-gray-50 rounded border min-w-[80px] sm:min-w-[120px] text-center">
                       Page {currentPage} of {historyData.pagination.totalPages}
-                    </span>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={!historyData.pagination.hasNextPage}
+                      className="text-xs sm:text-sm px-2 sm:px-3"
                     >
-                      Next
-                      <ChevronRight className="w-4 h-4" />
+                      <span className="hidden sm:inline">Next</span>
+                      <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 sm:ml-1" />
                     </Button>
                   </div>
                 </div>
               )}
             </>
           ) : (
-            <div className="text-center py-12">
+            <div className="text-center py-8 sm:py-12">
               <div className="text-gray-400 mb-4">
-                <Calendar className="w-16 h-16 mx-auto mb-4" />
-                <p className="text-lg font-medium">No analysis history yet</p>
-                <p className="text-sm mt-2">
+                <Calendar className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4" />
+                <p className="text-base sm:text-lg font-medium">No analysis history yet</p>
+                <p className="text-sm mt-2 px-4 sm:px-0">
                   Start by uploading an image in the "New Analysis" tab to begin tracking your skin health journey.
                 </p>
               </div>

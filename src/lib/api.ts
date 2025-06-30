@@ -35,13 +35,27 @@ export interface DetectedFeature {
   boundingBox?: BoundingBox;
   area?: number; // percentage of affected area
   severity?: 'mild' | 'moderate' | 'severe';
+  bodyRegion?: 'face' | 'arm' | 'hand' | 'leg' | 'torso' | 'neck' | 'etc';
   description?: string;
+  distinctiveCharacteristics?: string;
+  coordinateVerification?: {
+    isOnSkin: boolean;
+    isNotOnClothing: boolean;
+    isMostDistinctive: boolean;
+    skinAreaDescription: string;
+  };
 }
 
 export interface ImageMetadata {
   width: number;
   height: number;
   format: string;
+  aspectRatio?: number;
+  skinCoverage?: {
+    totalSkinAreaPercentage: number;
+    visibleSkinRegions: string[];
+    description: string;
+  };
   analyzedRegion?: {
     x: number;
     y: number;
@@ -242,6 +256,75 @@ export interface AuthResponse {
     accessToken: string;
     refreshToken: string;
   };
+}
+
+export interface UserSettings {
+  _id: string;
+  userId: string;
+  
+  // Account preferences
+  language: string;
+  timezone: string;
+  
+  // Notification preferences  
+  notifications: {
+    analysisComplete: boolean;
+    treatmentReminders: boolean;
+    weeklyReports: boolean;
+    marketingEmails: boolean;
+    pushNotifications: boolean;
+    emailNotifications: boolean;
+  };
+  
+  // Privacy & security settings
+  privacy: {
+    profileVisibility: 'public' | 'private' | 'friends';
+    dataSharing: boolean;
+    analyticsTracking: boolean;
+    marketingCommunications: boolean;
+  };
+  
+  // Display preferences
+  theme: 'light' | 'dark' | 'auto';
+  currency: string;
+  dateFormat: string;
+  
+  // Analysis preferences
+  analysisDefaults: {
+    skinType?: 'oily' | 'dry' | 'combination' | 'sensitive' | 'normal';
+    includeAdvancedAnalysis: boolean;
+    autoSaveResults: boolean;
+  };
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DataUsage {
+  totalAnalyses: number;
+  totalImageSize: number;
+  settingsRecords: number;
+  estimatedTotalSize: number;
+  lastUpdated: string;
+}
+
+export interface Notification {
+  _id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'success' | 'info' | 'warning' | 'error';
+  category: 'analysis' | 'treatment' | 'subscription' | 'system' | 'feature';
+  isRead: boolean;
+  actionUrl?: string;
+  metadata?: {
+    analysisId?: string;
+    subscriptionId?: string;
+    [key: string]: any;
+  };
+  timeAgo: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Create axios instance  
@@ -481,11 +564,22 @@ class ApiService {
         return api.get('/ai/health');
     }
 
-    // Validate if image contains suitable skin area for analysis
+    // Validate if image contains suitable skin areas for comprehensive analysis
     async validateSkinArea(imageFile: File): Promise<ApiResponse<{
         hasFace: boolean;
         skinAreaDetected: boolean;
+        imageQuality?: 'excellent' | 'good' | 'fair' | 'poor';
         faceRegion?: { x: number; y: number; width: number; height: number };
+        visibleSkinAreas?: {
+            face?: boolean;
+            arms?: boolean;
+            hands?: boolean;
+            legs?: boolean;
+            torso?: boolean;
+            neck?: boolean;
+        };
+        analysisRecommendation?: 'proceed' | 'retake' | 'insufficient';
+        issues?: string[];
         suitable: boolean;
     }>> {
         const formData = new FormData();
@@ -566,6 +660,77 @@ class ApiService {
         return api.delete(`/history/${id}`);
     }
 
+    // Settings Management Methods
+    async getSettings(): Promise<ApiResponse<UserSettings>> {
+        return api.get('/settings');
+    }
+
+    async updateSettings(settings: Partial<UserSettings>): Promise<ApiResponse<UserSettings>> {
+        return api.put('/settings', settings);
+    }
+
+    async resetSettings(): Promise<ApiResponse<UserSettings>> {
+        return api.post('/settings/reset');
+    }
+
+    async updateNotifications(notifications: Partial<UserSettings['notifications']>): Promise<ApiResponse<{ notifications: UserSettings['notifications'] }>> {
+        return api.put('/settings/notifications', { notifications });
+    }
+
+    async updatePrivacy(privacy: Partial<UserSettings['privacy']>): Promise<ApiResponse<{ privacy: UserSettings['privacy'] }>> {
+        return api.put('/settings/privacy', { privacy });
+    }
+
+    async getDataUsage(): Promise<ApiResponse<DataUsage>> {
+        return api.get('/settings/data-usage');
+    }
+
+    async exportData(): Promise<string> {
+        const response = await api.get('/settings/export', {
+            responseType: 'text'
+        });
+        return response.data;
+    }
+
+    async deleteAccount(confirmPassword: string): Promise<ApiResponse> {
+        return api.delete('/settings/account', {
+            data: { confirmPassword }
+        });
+    }
+
+    // Notifications Management Methods
+    async getNotifications(limit?: number): Promise<ApiResponse<Notification[]>> {
+        const params = limit ? { limit } : {};
+        return api.get('/notifications', { params });
+    }
+
+    async getUnreadNotificationsCount(): Promise<ApiResponse<{ count: number }>> {
+        return api.get('/notifications/unread-count');
+    }
+
+    async markNotificationAsRead(id: string): Promise<ApiResponse<Notification>> {
+        return api.put(`/notifications/${id}/read`);
+    }
+
+    async markAllNotificationsAsRead(): Promise<ApiResponse> {
+        return api.put('/notifications/mark-all-read');
+    }
+
+    async deleteNotification(id: string): Promise<ApiResponse> {
+        return api.delete(`/notifications/${id}`);
+    }
+
+    async createNotification(data: {
+        title: string;
+        message: string;
+        type?: 'success' | 'info' | 'warning' | 'error';
+        category?: 'analysis' | 'treatment' | 'subscription' | 'system' | 'feature';
+        actionUrl?: string;
+        metadata?: any;
+    }): Promise<ApiResponse<Notification>> {
+        return api.post('/notifications', data);
+    }
+
     // Utility Methods
     setAuthToken(token: string | null) {
         if (token) {
@@ -635,6 +800,26 @@ export const historyService = {
     getConditionTrend: apiService.getConditionTrend.bind(apiService),
     addNotes: apiService.addAnalysisNotes.bind(apiService),
     deleteAnalysis: apiService.deleteAnalysis.bind(apiService),
+};
+
+export const settingsService = {
+    getSettings: apiService.getSettings.bind(apiService),
+    updateSettings: apiService.updateSettings.bind(apiService),
+    resetSettings: apiService.resetSettings.bind(apiService),
+    updateNotifications: apiService.updateNotifications.bind(apiService),
+    updatePrivacy: apiService.updatePrivacy.bind(apiService),
+    getDataUsage: apiService.getDataUsage.bind(apiService),
+    exportData: apiService.exportData.bind(apiService),
+    deleteAccount: apiService.deleteAccount.bind(apiService),
+};
+
+export const notificationsService = {
+    getNotifications: apiService.getNotifications.bind(apiService),
+    getUnreadCount: apiService.getUnreadNotificationsCount.bind(apiService),
+    markAsRead: apiService.markNotificationAsRead.bind(apiService),
+    markAllAsRead: apiService.markAllNotificationsAsRead.bind(apiService),
+    deleteNotification: apiService.deleteNotification.bind(apiService),
+    createNotification: apiService.createNotification.bind(apiService),
 };
 
 // Export the raw axios instance for advanced usage

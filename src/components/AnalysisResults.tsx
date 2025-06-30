@@ -43,9 +43,9 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
       setHasAnalyzed(true); // Mark as analyzed
 
       try {
-        console.log("Step 1: Validating skin area in image...");
+        console.log("Step 1: Validating skin areas in image...");
         
-        // First validate if the image contains suitable skin area
+        // First validate if the image contains suitable skin areas for comprehensive analysis
         const skinValidation = await aiService.validateSkinArea(imageFile);
         
         if (!skinValidation.success) {
@@ -54,17 +54,27 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
 
         if (!skinValidation.data?.suitable) {
           const issues = [];
-          if (!skinValidation.data?.hasFace) {
-            issues.push("No clear face detected");
-          }
           if (!skinValidation.data?.skinAreaDetected) {
-            issues.push("Insufficient skin area visible");
+            issues.push("Insufficient skin area visible for analysis");
           }
           
-          throw new Error(`Image not suitable for analysis: ${issues.join(', ')}. Please ensure the image shows a clear, well-lit face with visible skin areas.`);
+          const visibleAreas = skinValidation.data?.visibleSkinAreas;
+          if (visibleAreas) {
+            const detectedRegions = Object.entries(visibleAreas)
+              .filter(([_, detected]) => detected)
+              .map(([region, _]) => region);
+            
+            if (detectedRegions.length === 0) {
+              issues.push("No clear skin areas detected");
+            } else {
+              console.log(`✅ Detected skin areas: ${detectedRegions.join(', ')}`);
+            }
+          }
+          
+          throw new Error(`Image not suitable for analysis: ${issues.join(', ')}. Please ensure the image shows clear, well-lit skin areas.`);
         }
 
-        console.log("✅ Skin validation passed - proceeding with analysis");
+        console.log("✅ Comprehensive skin validation passed - proceeding with analysis");
         console.log("Step 2: Starting comprehensive analysis with coordinates...");
         
         // Call comprehensive analysis with coordinates - let AI detect age from image
@@ -103,9 +113,9 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
       <Card className="w-full max-w-4xl">
         <CardContent className="flex flex-col items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Analyzing Your Image</h3>
+          <h3 className="text-lg font-semibold mb-2">Analyzing Your Skin</h3>
           <p className="text-gray-600 text-center">
-            Our AI is processing your image and generating personalized recommendations
+            Our AI is performing comprehensive skin analysis across all visible areas and generating personalized recommendations
           </p>
         </CardContent>
       </Card>
@@ -181,11 +191,13 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
             <Progress value={topCondition.confidence * 100} className="h-2" />
           </div>
 
-          {/* All Predictions */}
+          {/* All Detected Conditions */}
           <div>
-            <h4 className="font-medium mb-3">All Detected Conditions</h4>
+            <h4 className="font-medium mb-3">Comprehensive Skin Analysis Results</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {analysis.allPredictions.map((prediction: any, index: number) => (
+              {analysis.allPredictions
+                .filter((prediction: any) => prediction.confidence > 0.1) // Only show meaningful predictions
+                .map((prediction: any, index: number) => (
                 <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <span className="capitalize text-sm">
                     {prediction.condition.replace(/_/g, ' ')}
@@ -197,6 +209,14 @@ const AnalysisResults = ({ imageUrl, imageFile, onAnalysisComplete }: AnalysisRe
                 </div>
               ))}
             </div>
+            {analysis.detectedFeatures && analysis.detectedFeatures.length > 0 && (
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>{analysis.detectedFeatures.length}</strong> specific features detected with precise locations across{' '}
+                  <strong>{[...new Set(analysis.detectedFeatures.map((f: any) => f.bodyRegion).filter(Boolean))].length}</strong> body region(s).
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
