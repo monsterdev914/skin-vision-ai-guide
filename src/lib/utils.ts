@@ -7,5 +7,5 @@ export function cn(...inputs: ClassValue[]) {
 export const getServerBaseUrl = () => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3457/api';
   // Remove /api suffix if present, since uploads are served at root /uploads
-  return backendUrl.replace('/api', '');
+  return backendUrl.replace(/\/api$/, '');
 };
