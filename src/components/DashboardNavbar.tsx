@@ -1,23 +1,28 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { User, Settings, LogOut, Bell, Loader2 } from "lucide-react";
+import { User, Settings, LogOut, Bell, Loader2, X, Check } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import Logo from "@/components/Logo";
-import { userService, authService, UserProfile } from "@/lib/api";
+import { userService, authService, UserProfile, notificationsService, Notification } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 const DashboardNavbar = () => {
   const [profileData, setProfileData] = useState<UserProfile | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Load profile data on component mount
+  // Load profile data and notifications on component mount
   useEffect(() => {
     loadProfile();
+    loadNotifications();
+    loadUnreadCount();
   }, []);
 
   const loadProfile = async () => {
@@ -34,6 +39,33 @@ const DashboardNavbar = () => {
       // Don't show toast for navbar errors, just log them
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadNotifications = async () => {
+    try {
+      setIsNotificationsLoading(true);
+      const response = await notificationsService.getNotifications(10); // Get last 10 notifications
+      
+      if (response.success && response.data) {
+        setNotifications(response.data);
+      }
+    } catch (error: any) {
+      console.error('Failed to load notifications:', error);
+    } finally {
+      setIsNotificationsLoading(false);
+    }
+  };
+
+  const loadUnreadCount = async () => {
+    try {
+      const response = await notificationsService.getUnreadCount();
+      
+      if (response.success && response.data) {
+        setUnreadCount(response.data.count);
+      }
+    } catch (error: any) {
+      console.error('Failed to load unread count:', error);
     }
   };
 
@@ -81,31 +113,71 @@ const DashboardNavbar = () => {
     return 'bg-gradient-to-r from-yellow-600 to-yellow-700';
   };
 
-  const alertHistory = [{
-    id: 1,
-    title: "Analysis Complete",
-    message: "Your skin analysis for uploaded image has been completed.",
-    time: "2 hours ago",
-    type: "success"
-  }, {
-    id: 2,
-    title: "Treatment Reminder",
-    message: "Don't forget to apply your recommended moisturizer.",
-    time: "1 day ago",
-    type: "info"
-  }, {
-    id: 3,
-    title: "Subscription Expiring",
-    message: "Your Premium subscription expires in 3 days.",
-    time: "2 days ago",
-    type: "warning"
-  }, {
-    id: 4,
-    title: "New Feature Available",
-    message: "Try our new AR skin preview feature!",
-    time: "3 days ago",
-    type: "info"
-  }];
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await notificationsService.markAsRead(id);
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif._id === id ? { ...notif, isRead: true } : notif
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error: any) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationsService.markAllAsRead();
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, isRead: true }))
+      );
+      setUnreadCount(0);
+      toast({
+        title: "All notifications marked as read",
+        description: "All your notifications have been marked as read.",
+      });
+    } catch (error: any) {
+      console.error('Failed to mark all notifications as read:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark all notifications as read",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    try {
+      await notificationsService.deleteNotification(id);
+      const deletedNotification = notifications.find(n => n._id === id);
+      setNotifications(prev => prev.filter(notif => notif._id !== id));
+      if (deletedNotification && !deletedNotification.isRead) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error: any) {
+      console.error('Failed to delete notification:', error);
+    }
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.isRead) {
+      handleMarkAsRead(notification._id);
+    }
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+    }
+  };
+
+  const getBadgeVariant = (type: string) => {
+    switch (type) {
+      case 'success': return 'default';
+      case 'warning': return 'destructive';
+      case 'error': return 'destructive';
+      default: return 'secondary';
+    }
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200">
@@ -135,31 +207,88 @@ const DashboardNavbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="relative">
                   <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-80" align="end">
-                <DropdownMenuLabel>Alert History</DropdownMenuLabel>
+              <DropdownMenuContent className="w-96" align="end">
+                <div className="flex items-center justify-between p-2">
+                  <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+                  {unreadCount > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleMarkAllAsRead}
+                      className="h-8 text-xs"
+                    >
+                      <Check className="w-4 h-4 mr-1" />
+                      Mark all read
+                    </Button>
+                  )}
+                </div>
                 <DropdownMenuSeparator />
                 <div className="max-h-96 overflow-y-auto">
-                  {alertHistory.map((alert, index) => (
-                    <div key={alert.id}>
-                      <DropdownMenuItem className="flex flex-col items-start p-4 h-auto">
-                        <div className="flex items-center justify-between w-full mb-1">
-                          <h4 className="text-sm font-medium">{alert.title}</h4>
-                          <span className="text-xs text-gray-500">{alert.time}</span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
-                        <Badge 
-                          variant={alert.type === 'success' ? 'default' : alert.type === 'warning' ? 'destructive' : 'secondary'} 
-                          className="text-xs"
-                        >
-                          {alert.type}
-                        </Badge>
-                      </DropdownMenuItem>
-                      {index < alertHistory.length - 1 && <DropdownMenuSeparator />}
+                  {isNotificationsLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      <span className="text-sm text-gray-500">Loading notifications...</span>
                     </div>
-                  ))}
+                  ) : notifications.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500 text-sm">
+                      No notifications yet
+                    </div>
+                  ) : (
+                    notifications.map((notification, index) => (
+                      <div key={notification._id}>
+                        <DropdownMenuItem 
+                          className={`flex flex-col items-start p-3 h-auto cursor-pointer hover:bg-gray-50 ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                          onClick={() => handleNotificationClick(notification)}
+                        >
+                          <div className="flex items-start justify-between w-full mb-1">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className={`text-sm ${!notification.isRead ? 'font-semibold' : 'font-medium'} truncate`}>
+                                  {notification.title}
+                                </h4>
+                                {!notification.isRead && (
+                                  <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 break-words line-clamp-2 mb-2">
+                                {notification.message}
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <Badge 
+                                  variant={getBadgeVariant(notification.type)} 
+                                  className="text-xs"
+                                >
+                                  {notification.type}
+                                </Badge>
+                                <span className="text-xs text-gray-500 flex-shrink-0">
+                                  {notification.timeAgo}
+                                </span>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteNotification(notification._id);
+                              }}
+                              className="ml-2 h-6 w-6 p-0 hover:bg-red-100 flex-shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </DropdownMenuItem>
+                        {index < notifications.length - 1 && <DropdownMenuSeparator />}
+                      </div>
+                    ))
+                  )}
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>

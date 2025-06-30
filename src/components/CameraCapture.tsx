@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Camera as CameraIcon, CameraOff, RotateCcw, CheckCircle, AlertTriangle, Info, Loader2, User, UserX } from 'lucide-react';
+import { Camera as CameraIcon, CameraOff, RotateCcw, CheckCircle, AlertTriangle, Info, Loader2, User, UserX, Scan, Users } from 'lucide-react';
 import { aiService } from '@/lib/api';
+import { SkinDetectionService, SkinRegion, SkinDetectionResult } from '@/services/skinDetection';
 
 interface CameraCaptureProps {
   onImageCapture: (imageFile: File, imageUrl: string) => void;
@@ -49,6 +50,12 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
   const [faceDetected, setFaceDetected] = useState(false);
   const [facesDetected, setFacesDetected] = useState(0);
   const [boundingBox, setBoundingBox] = useState<BoundingBox[]>([]);
+  
+  // Skin detection state
+  const [skinDetectionService] = useState(() => new SkinDetectionService());
+  const [skinRegions, setSkinRegions] = useState<SkinRegion[]>([]);
+  const [skinDetectionResult, setSkinDetectionResult] = useState<SkinDetectionResult | null>(null);
+  const [isSkinDetectionLoading, setIsSkinDetectionLoading] = useState(false);
 
   // Initialize MediaPipe Face Detection
   useEffect(() => {
@@ -106,6 +113,27 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
       }
     };
   }, [faceDetectionEnabled]);
+
+  // Initialize skin detection service
+  useEffect(() => {
+    const initializeSkinDetection = async () => {
+      try {
+        setIsSkinDetectionLoading(true);
+        await skinDetectionService.initialize();
+        console.log('✅ Skin detection service initialized');
+      } catch (error) {
+        console.error('❌ Failed to initialize skin detection:', error);
+      } finally {
+        setIsSkinDetectionLoading(false);
+      }
+    };
+
+    initializeSkinDetection();
+
+    return () => {
+      skinDetectionService.dispose();
+    };
+  }, [skinDetectionService]);
 
   // Start camera for face detection
   useEffect(() => {
@@ -217,6 +245,37 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
     onError?.(errorMessage);
   }, [onError]);
 
+  const performSkinDetection = useCallback(async (imageSrc: string) => {
+    try {
+      // Create image element for skin detection
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      return new Promise<SkinDetectionResult>((resolve, reject) => {
+        img.onload = async () => {
+          try {
+            const result = await skinDetectionService.detectSkinAreas(img);
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        img.onerror = () => reject(new Error('Failed to load image for skin detection'));
+        img.src = imageSrc;
+      });
+    } catch (error) {
+      console.error('Skin detection error:', error);
+      return {
+        success: false,
+        regions: [],
+        totalSkinArea: 0,
+        totalImageArea: 0,
+        skinCoveragePercentage: 0,
+        message: `Skin detection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }, [skinDetectionService]);
+
   const captureImage = useCallback(async () => {
     if (!webcamRef.current || !cameraReady) {
       setError('Camera not ready. Please wait for the camera to initialize.');
@@ -246,6 +305,23 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
         return;
       }
 
+      // Perform comprehensive skin area detection
+      console.log('🔍 Performing comprehensive skin area detection...');
+      const skinResult = await performSkinDetection(imageSrc);
+      setSkinDetectionResult(skinResult);
+      setSkinRegions(skinResult.regions);
+
+      if (skinResult.success) {
+        console.log(`✅ Detected ${skinResult.regions.length} skin regions covering ${skinResult.skinCoveragePercentage.toFixed(1)}% of image`);
+        
+        // Log detected body parts
+        const bodyParts = skinResult.regions.map(r => r.bodyPart);
+        const uniqueBodyParts = [...new Set(bodyParts)];
+        console.log('📍 Detected body parts:', uniqueBodyParts.join(', '));
+      } else {
+        console.log('⚠️ Skin detection failed:', skinResult.message);
+      }
+
       // Convert data URL to blob and create file
       const response = await fetch(imageSrc);
       const blob = await response.blob();
@@ -258,20 +334,20 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
       // Validate with backend AI
       setIsValidating(true);
       try {
-        console.log('Validating captured image with AI...');
+        console.log('Validating captured image with comprehensive skin analysis...');
         const validation = await aiService.validateSkinArea(file);
         setSkinValidation(validation);
         
         if (validation.success && validation.data?.suitable) {
-          console.log('✅ Camera image validation passed');
+          console.log('✅ Backend validation passed');
           onImageCapture(file, imageSrc);
         } else {
-          console.log('⚠️ Camera image validation failed:', validation.message);
+          console.log('⚠️ Backend validation failed:', validation.message);
           // Still allow capture but show warning
           onImageCapture(file, imageSrc);
         }
       } catch (validationError) {
-        console.error('Camera image validation error:', validationError);
+        console.error('Backend validation error:', validationError);
         // Still allow capture if validation fails
         onImageCapture(file, imageSrc);
       } finally {
@@ -285,7 +361,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
     } finally {
       setIsCapturing(false);
     }
-  }, [cameraReady, onImageCapture, onError, getScreenshot, faceDetectionEnabled]);
+  }, [cameraReady, onImageCapture, onError, getScreenshot, faceDetectionEnabled, performSkinDetection]);
 
   const retakePhoto = useCallback(() => {
     setCapturedImage(null);
@@ -293,6 +369,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
     setError(null);
     setSkinValidation(null);
     setIsValidating(false);
+    setSkinRegions([]);
+    setSkinDetectionResult(null);
   }, []);
 
   const stopCamera = useCallback(() => {
@@ -303,6 +381,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
     setError(null);
     setSkinValidation(null);
     setIsValidating(false);
+    setSkinRegions([]);
+    setSkinDetectionResult(null);
     setWebcamKey(0); // Reset webcam key
   }, []);
 
@@ -449,6 +529,33 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
           </div>
         )}
 
+        {/* Skin Detection Status */}
+        {isStreaming && !capturedImage && (
+          <div className="p-3 border rounded-lg bg-purple-50">
+            <div className="flex items-center gap-2 mb-2">
+              {isSkinDetectionLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Scan className="w-4 h-4 text-purple-600" />
+              )}
+              <h4 className="text-sm font-medium">Comprehensive Skin Detection</h4>
+            </div>
+            
+            {isSkinDetectionLoading ? (
+              <p className="text-xs text-gray-600">Initializing skin detection model...</p>
+            ) : (
+              <div className="space-y-1">
+                <p className="text-xs text-purple-700">
+                  🎯 Ready to detect skin areas across entire body (face, arms, hands, torso, legs, etc.)
+                </p>
+                <p className="text-xs text-purple-600">
+                  💡 Expose any skin areas for comprehensive analysis
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Error Display */}
         {error && (
           <Alert variant="destructive">
@@ -491,15 +598,17 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
             <>
               <Button 
                 onClick={captureImage} 
-                disabled={!cameraReady || isCapturing || isValidating || (faceDetectionEnabled && !faceDetected)}
+                disabled={!cameraReady || isCapturing || isValidating || isSkinDetectionLoading || (faceDetectionEnabled && !faceDetected)}
                 className="flex items-center gap-2"
               >
-                {isCapturing || isValidating ? (
+                {isCapturing || isValidating || isSkinDetectionLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <CameraIcon className="w-4 h-4" />
                 )}
-                {isCapturing ? 'Capturing...' : isValidating ? 'Validating...' : 
+                {isCapturing ? 'Capturing...' : 
+                 isValidating ? 'Validating...' : 
+                 isSkinDetectionLoading ? 'Loading Skin Detection...' :
                  (faceDetectionEnabled && !faceDetected) ? 'No Face Detected' : 'Capture Photo'}
               </Button>
               <Button 
@@ -561,6 +670,37 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Skin Region Overlays */}
+            {skinRegions.length > 0 && capturedImage && (
+              <div className="absolute inset-0 pointer-events-none">
+                {skinRegions.map((region, index) => {
+                  // Calculate normalized coordinates
+                  const imageElement = webcamRef.current?.video;
+                  if (!imageElement) return null;
+                  
+                  const scaleX = 100 / imageElement.videoWidth;
+                  const scaleY = 100 / imageElement.videoHeight;
+                  
+                  return (
+                    <div
+                      key={region.id}
+                      className="absolute border-2 border-purple-500 bg-purple-500/10 rounded"
+                      style={{
+                        left: `${region.boundingBox.x * scaleX}%`,
+                        top: `${region.boundingBox.y * scaleY}%`,
+                        width: `${region.boundingBox.width * scaleX}%`,
+                        height: `${region.boundingBox.height * scaleY}%`,
+                      }}
+                    >
+                      <div className="absolute -top-6 left-0 bg-purple-500 text-white text-xs px-1 rounded">
+                        {region.bodyPart}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
             
@@ -661,20 +801,89 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
             )}
 
             {/* AI Validation Results */}
+            {/* Comprehensive Skin Detection Results */}
+            {skinDetectionResult && capturedImage && (
+              <div className="space-y-3">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Scan className="w-4 h-4" />
+                  Comprehensive Skin Detection Results
+                </h4>
+                
+                {skinDetectionResult.success ? (
+                  <Alert>
+                    <CheckCircle className="w-4 h-4" />
+                    <AlertDescription className="text-green-700">
+                      <div className="space-y-2">
+                        <div>
+                          ✅ <strong>Detected {skinDetectionResult.regions.length} skin regions</strong> covering{' '}
+                          <strong>{skinDetectionResult.skinCoveragePercentage.toFixed(1)}%</strong> of the image
+                        </div>
+                        
+                        {skinDetectionResult.regions.length > 0 && (
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            {skinDetectionResult.regions.map((region, index) => (
+                              <div key={region.id} className="flex items-center gap-1">
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs"
+                                  style={{ 
+                                    borderColor: `hsl(${(index * 360) / skinDetectionResult.regions.length}, 70%, 50%)`,
+                                    color: `hsl(${(index * 360) / skinDetectionResult.regions.length}, 70%, 40%)`
+                                  }}
+                                >
+                                  {region.bodyPart}
+                                </Badge>
+                                <span className="text-gray-600">
+                                  {(region.area / 1000).toFixed(1)}k px
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="text-xs text-gray-600 mt-2">
+                          <strong>Body parts detected:</strong> {
+                            [...new Set(skinDetectionResult.regions.map(r => r.bodyPart))]
+                              .filter(part => part !== 'unknown')
+                              .join(', ') || 'Various skin areas'
+                          }
+                        </div>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="w-4 h-4" />
+                    <AlertDescription>
+                      ⚠️ {skinDetectionResult.message}
+                      <div className="mt-2 text-xs">
+                        <strong>Tip:</strong> Ensure adequate lighting and expose some skin areas (face, arms, hands, etc.) for optimal detection.
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+
             {skinValidation && !isValidating && (
               <div className="space-y-3">
                 <h4 className="font-medium">
-                  AI Skin Analysis Validation
+                  Backend AI Validation
                 </h4>
                 
                 {skinValidation.success && skinValidation.data?.suitable ? (
                   <Alert>
                     <CheckCircle className="w-4 h-4" />
                     <AlertDescription className="text-green-700">
-                      ✅ Perfect! AI detected a clear face with suitable skin areas for analysis.
-                      {skinValidation.data.faceRegion && (
+                      ✅ Backend AI confirmed suitable skin areas for comprehensive analysis.
+                      {skinValidation.data.visibleSkinAreas && (
                         <div className="mt-2 text-xs">
-                          Face region detected at optimal position for skin analysis.
+                          <strong>Backend detected regions:</strong> {
+                            Object.entries(skinValidation.data.visibleSkinAreas)
+                              .filter(([_, detected]) => detected)
+                              .map(([region, _]) => region)
+                              .join(', ') || 'Various skin areas'
+                          }
                         </div>
                       )}
                     </AlertDescription>
@@ -683,9 +892,9 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
                   <Alert variant="destructive">
                     <AlertTriangle className="w-4 h-4" />
                     <AlertDescription>
-                      ⚠️ {skinValidation.message || 'AI validation found issues with the image'}
+                      ⚠️ {skinValidation.message || 'Backend validation found issues with the image'}
                       <div className="mt-2 text-xs">
-                        <strong>Suggestions:</strong> Ensure good lighting, position face clearly in frame, and remove any obstructions.
+                        <strong>Suggestions:</strong> Ensure good lighting, position skin areas clearly in frame, and remove any obstructions. Any exposed skin (face, arms, hands, etc.) can be analyzed.
                       </div>
                     </AlertDescription>
                   </Alert>

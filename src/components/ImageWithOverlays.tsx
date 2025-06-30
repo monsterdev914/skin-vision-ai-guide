@@ -12,6 +12,12 @@ interface ImageWithOverlaysProps {
     width: number;
     height: number;
     format: string;
+    aspectRatio?: number;
+    skinCoverage?: {
+      totalSkinAreaPercentage: number;
+      visibleSkinRegions: string[];
+      description: string;
+    };
     analyzedRegion?: {
       x: number;
       y: number;
@@ -39,76 +45,113 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
   const [naturalImageSize, setNaturalImageSize] = useState({ width: 0, height: 0 });
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Handle image load to get actual rendered dimensions
-  const handleImageLoad = () => {
+  // Update image dimensions with proper calculations
+  const updateImageDimensions = () => {
     if (imageRef.current) {
-      // Get the actual displayed dimensions
-      const displayedWidth = imageRef.current.offsetWidth;
-      const displayedHeight = imageRef.current.offsetHeight;
+      // Use getBoundingClientRect for more accurate sizing
+      const rect = imageRef.current.getBoundingClientRect();
+      const displayedWidth = rect.width;
+      const displayedHeight = rect.height;
       
       // Get the natural dimensions
       const naturalWidth = imageRef.current.naturalWidth;
       const naturalHeight = imageRef.current.naturalHeight;
       
-      setActualImageSize({
-        width: displayedWidth,
-        height: displayedHeight
-      });
+      // Only update if dimensions have actually changed
+      if (displayedWidth !== actualImageSize.width || displayedHeight !== actualImageSize.height) {
+        setActualImageSize({
+          width: displayedWidth,
+          height: displayedHeight
+        });
+      }
       
-      setNaturalImageSize({
-        width: naturalWidth,
-        height: naturalHeight
-      });
+      if (naturalWidth !== naturalImageSize.width || naturalHeight !== naturalImageSize.height) {
+        setNaturalImageSize({
+          width: naturalWidth,
+          height: naturalHeight
+        });
+      }
       
-      setImageLoaded(true);
-      
-      console.log('Image loaded:', {
+      console.log('Image dimensions updated:', {
         displayed: { width: displayedWidth, height: displayedHeight },
         natural: { width: naturalWidth, height: naturalHeight }
       });
     }
   };
 
-  // Recalculate dimensions on window resize
+  // Handle image load to get actual rendered dimensions
+  const handleImageLoad = () => {
+    if (imageRef.current) {
+      setImageLoaded(true);
+      // Use setTimeout to ensure the image is fully rendered
+      setTimeout(() => {
+        updateImageDimensions();
+      }, 100);
+    }
+  };
+
+  // Use ResizeObserver for better resize detection
   useEffect(() => {
-    const handleResize = () => {
-      if (imageRef.current && imageLoaded) {
-        setActualImageSize({
-          width: imageRef.current.offsetWidth,
-          height: imageRef.current.offsetHeight
-        });
+    if (!imageRef.current || !imageLoaded) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      // Debounce the resize handling
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
       }
+      
+      resizeTimeoutRef.current = setTimeout(() => {
+        updateImageDimensions();
+      }, 150);
+    });
+
+    resizeObserver.observe(imageRef.current);
+
+    // Fallback resize handler for older browsers
+    const handleResize = () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      
+      resizeTimeoutRef.current = setTimeout(() => {
+        updateImageDimensions();
+      }, 150);
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [imageLoaded]);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+    };
+  }, [imageLoaded, actualImageSize.width, actualImageSize.height]);
+
+  // Update dimensions when zoom changes
+  useEffect(() => {
+    if (imageLoaded && imageRef.current) {
+      setTimeout(() => {
+        updateImageDimensions();
+      }, 100);
+    }
+  }, [zoom]);
 
   // Convert normalized coordinates to pixel coordinates
-  // If we have an analyzed region, coordinates should be relative to that region
+  // For comprehensive skin analysis, coordinates are relative to the full image
   const normalizedToPixel = (coord: Coordinate): Coordinate => {
-    const analyzedRegion = (imageMetadata as any)?.analyzedRegion;
-    
-    if (analyzedRegion) {
-      // Coordinates from AI are relative to the analyzed region, not the full image
-      // Transform them to be positioned within the analyzed region
-      const regionX = analyzedRegion.x * actualImageSize.width;
-      const regionY = analyzedRegion.y * actualImageSize.height;
-      const regionWidth = analyzedRegion.width * actualImageSize.width;
-      const regionHeight = analyzedRegion.height * actualImageSize.height;
-      
-      return {
-        x: regionX + (coord.x * regionWidth),
-        y: regionY + (coord.y * regionHeight)
-      };
-    } else {
-      // Fallback to full image coordinates
-      return {
-        x: coord.x * actualImageSize.width,
-        y: coord.y * actualImageSize.height
-      };
+    if (actualImageSize.width === 0 || actualImageSize.height === 0) {
+      return { x: 0, y: 0 };
     }
+
+    // Convert normalized coordinates directly to pixel coordinates
+    return {
+      x: coord.x * actualImageSize.width,
+      y: coord.y * actualImageSize.height
+    };
   };
 
   // Convert normalized bounding box to pixel bounding box
@@ -121,9 +164,10 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
     };
   };
 
-  // Get color for condition type
+  // Get color for condition type - comprehensive skin conditions
   const getConditionColor = (condition: string): string => {
     const colors: Record<string, string> = {
+      // Facial conditions
       'hormonal_acne': '#ef4444', // red
       'forehead_wrinkles': '#f97316', // orange
       'oily_skin': '#eab308', // yellow
@@ -131,7 +175,17 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
       'dark_spots': '#8b5cf6', // purple
       'under_eye_bags': '#10b981', // emerald
       'rosacea': '#f43f5e', // rose
-      'normal_skin': '#6b7280' // gray
+      'normal_skin': '#6b7280', // gray
+      // Body conditions
+      'eczema': '#f59e0b', // amber
+      'psoriasis': '#dc2626', // red-600
+      'keratosis_pilaris': '#059669', // emerald-600
+      'stretch_marks': '#7c3aed', // violet-600
+      'scars': '#4b5563', // gray-600
+      'moles': '#1f2937', // gray-800
+      'sun_damage': '#f59e0b', // amber
+      'age_spots': '#92400e', // amber-800
+      'seborrheic_keratosis': '#78716c' // stone-500
     };
     return colors[condition] || '#6b7280';
   };
@@ -157,40 +211,43 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
 
   return (
     <Card className={`${className}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <span>Skin Analysis Visualization</span>
+      <CardHeader className="pb-3 sm:pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 gap-2 sm:gap-0">
+            <span className="text-base sm:text-lg">Comprehensive Skin Analysis</span>
             {detectedFeatures.length > 0 && (
-              <Badge variant="outline">{detectedFeatures.length} features detected</Badge>
+              <Badge variant="outline" className="text-xs sm:text-sm w-fit">
+                {detectedFeatures.length} condition{detectedFeatures.length !== 1 ? 's' : ''} detected
+              </Badge>
             )}
           </CardTitle>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:items-center sm:space-x-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowOverlays(!showOverlays)}
+              className="text-xs sm:text-sm"
             >
-              {showOverlays ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showOverlays ? <EyeOff className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> : <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />}
               {showOverlays ? 'Hide' : 'Show'} Overlays
             </Button>
             
-            <div className="flex items-center space-x-1">
-              <Button variant="outline" size="sm" onClick={zoomOut}>
-                <ZoomOut className="w-4 h-4" />
+            <div className="flex items-center justify-center space-x-1 sm:space-x-2">
+              <Button variant="outline" size="sm" onClick={zoomOut} className="px-2 sm:px-3">
+                <ZoomOut className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={resetZoom}>
-                <RotateCcw className="w-4 h-4" />
+              <Button variant="outline" size="sm" onClick={resetZoom} className="px-2 sm:px-3">
+                <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={zoomIn}>
-                <ZoomIn className="w-4 h-4" />
+              <Button variant="outline" size="sm" onClick={zoomIn} className="px-2 sm:px-3">
+                <ZoomIn className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setDebugMode(!debugMode)}
-                className={debugMode ? 'bg-blue-100' : ''}
+                className={`px-2 sm:px-3 text-xs ${debugMode ? 'bg-blue-100' : ''}`}
               >
                 🐛
               </Button>
@@ -204,18 +261,23 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
           {/* Image Container */}
           <div 
             ref={containerRef}
-            className="relative border rounded-lg overflow-hidden bg-gray-50"
+            className="relative border rounded-lg overflow-hidden bg-gray-50 w-full flex justify-center"
             style={{ maxHeight: '600px' }}
           >
             <div 
-              className="relative inline-block"
-              style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
+              className="relative"
+              style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}
             >
               <img
                 ref={imageRef}
                 src={imageUrl}
                 alt="Skin analysis"
                 className="max-w-full h-auto block"
+                style={{ 
+                  maxHeight: '600px',
+                  width: 'auto',
+                  height: 'auto'
+                }}
                 onLoad={handleImageLoad}
                 onError={() => setImageLoaded(false)}
               />
@@ -333,7 +395,7 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
                             <br />
                             Pixel: [{Math.round(pixelCoord.x)}, {Math.round(pixelCoord.y)}]
                             <br />
-                            {(imageMetadata as any)?.analyzedRegion ? 'Face-relative' : 'Full-image'}
+                            Body: {feature.bodyRegion || 'Unknown'}
                             <br />
                             R: {radius}px
                           </div>
@@ -360,6 +422,14 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
                         <span className="text-gray-600">Confidence:</span>
                         <span className="font-medium">{Math.round(selectedFeature.confidence * 100)}%</span>
                       </div>
+                      {selectedFeature.bodyRegion && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Body Region:</span>
+                          <Badge variant="secondary" className="capitalize">
+                            {selectedFeature.bodyRegion}
+                          </Badge>
+                        </div>
+                      )}
                       {selectedFeature.severity && (
                         <div className="flex justify-between">
                           <span className="text-gray-600">Severity:</span>
@@ -377,7 +447,7 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
                     </div>
                   </div>
                   
-                  <div>
+                  <div className="space-y-3">
                     {selectedFeature.description && (
                       <div>
                         <h5 className="font-medium mb-2">Description:</h5>
@@ -385,19 +455,31 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
                       </div>
                     )}
                     
+                    {selectedFeature.distinctiveCharacteristics && (
+                      <div>
+                        <h5 className="font-medium mb-2">Why This Location:</h5>
+                        <p className="text-sm text-gray-600">{selectedFeature.distinctiveCharacteristics}</p>
+                      </div>
+                    )}
+                    
                     {selectedFeature.coordinates && selectedFeature.coordinates.length > 0 && (
-                      <div className="mt-3">
-                        <h5 className="font-medium mb-2">Detected Points:</h5>
+                      <div>
+                        <h5 className="font-medium mb-2">Most Distinctive Point:</h5>
                         <div className="text-xs text-gray-600 space-y-1">
-                          {selectedFeature.coordinates.slice(0, 3).map((coord, idx) => (
-                            <div key={idx}>
-                              Point {idx + 1}: ({(coord.x * 100).toFixed(1)}%, {(coord.y * 100).toFixed(1)}%)
-                            </div>
-                          ))}
-                          {selectedFeature.coordinates.length > 3 && (
-                            <div>...and {selectedFeature.coordinates.length - 3} more points</div>
-                          )}
+                          <div>
+                            Location: ({(selectedFeature.coordinates[0].x * 100).toFixed(1)}%, {(selectedFeature.coordinates[0].y * 100).toFixed(1)}%)
+                          </div>
+                          <div className="text-gray-500">
+                            This represents the most obvious manifestation of {formatConditionName(selectedFeature.condition).toLowerCase()}.
+                          </div>
                         </div>
+                      </div>
+                    )}
+                    
+                    {selectedFeature.coordinateVerification?.skinAreaDescription && (
+                      <div>
+                        <h5 className="font-medium mb-2">Skin Area Analysis:</h5>
+                        <p className="text-xs text-gray-600">{selectedFeature.coordinateVerification.skinAreaDescription}</p>
                       </div>
                     )}
                   </div>
@@ -450,6 +532,40 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
             </Card>
           )}
           
+          {/* Skin Coverage Summary */}
+          {imageMetadata?.skinCoverage && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Analyzed Skin Areas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Skin Coverage:</span>
+                    <Badge variant="outline">
+                      {imageMetadata.skinCoverage.totalSkinAreaPercentage}% of image
+                    </Badge>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Visible Regions:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {imageMetadata.skinCoverage.visibleSkinRegions.map((region, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs capitalize">
+                          {region}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  {imageMetadata.skinCoverage.description && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      {imageMetadata.skinCoverage.description}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Image Metadata */}
           <div className="text-xs text-gray-500 text-center space-y-1">
             {imageMetadata && (
@@ -463,7 +579,8 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
                 <strong>Debug Info:</strong><br />
                 Displayed: {actualImageSize.width} × {actualImageSize.height}<br />
                 Natural: {naturalImageSize.width} × {naturalImageSize.height}<br />
-                Features: {detectedFeatures.length} detected<br />
+                Conditions: {detectedFeatures.length} detected<br />
+                Body Regions: {[...new Set(detectedFeatures.map(f => f.bodyRegion).filter(Boolean))].join(', ') || 'None'}<br />
                 Image Loaded: {imageLoaded ? 'Yes' : 'No'}
               </div>
             )}
