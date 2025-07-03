@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, TrendingUp, Brain, Heart, Shield, FileText, Activity, Trash2, Save } from "lucide-react";
 import { AnalysisHistoryItem, historyService } from "@/lib/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getServerBaseUrl } from "@/lib/utils";
 import ImageWithOverlays from "@/components/ImageWithOverlays";
@@ -22,6 +22,18 @@ const AnalysisDetailDialog = ({ analysis, open, onOpenChange, onAnalysisDeleted 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
+
+  // Debug logging for analysis data
+  useEffect(() => {
+    if (analysis && open) {
+      console.log('Analysis data in detailed modal:', {
+        analysis,
+        detectedFeatures: (analysis as any).detectedFeatures,
+        imageMetadata: (analysis as any).imageMetadata,
+        analysisType: analysis.analysisType
+      });
+    }
+  }, [analysis, open]);
 
   if (!analysis) return null;
 
@@ -93,12 +105,13 @@ const AnalysisDetailDialog = ({ analysis, open, onOpenChange, onAnalysisDeleted 
   };
 
   const getImageUrl = (analysis: AnalysisHistoryItem) => {
+    console.log('getImageUrl analysis:', analysis);
     // First check if backend provided imageUrl
     if ((analysis as any).imageUrl) {
       const baseUrl = getServerBaseUrl();
+      console.log('getImageUrl imageUrl:', `${baseUrl}${(analysis as any).imageUrl}`);
       return `${baseUrl}${(analysis as any).imageUrl}`;
     }
-    
     // Fallback to constructing from imagePath
     if (!analysis.imagePath) return null;
     
@@ -155,6 +168,7 @@ const AnalysisDetailDialog = ({ analysis, open, onOpenChange, onAnalysisDeleted 
                       detectedFeatures={(analysis as any).detectedFeatures}
                       imageMetadata={(analysis as any).imageMetadata}
                       className="w-full h-auto"
+                      isProfessional={analysis.analysisType === 'professional_skin_analyze_pro'}
                     />
                   </div>
                 </div>
