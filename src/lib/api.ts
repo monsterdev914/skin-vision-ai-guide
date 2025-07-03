@@ -731,6 +731,31 @@ class ApiService {
         return api.post('/notifications', data);
     }
 
+    // Professional skin analysis using Skin Analyze Pro API with precise location overlays
+    async getProfessionalSkinAnalysis(
+        imageFile: File,
+        userAge?: number,
+        skinType?: string,
+        currentProducts?: string[]
+    ): Promise<ApiResponse<any>> {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        
+        if (userAge) formData.append('userAge', userAge.toString());
+        if (skinType) formData.append('skinType', skinType);
+        if (currentProducts) {
+            currentProducts.forEach(product => {
+                formData.append('currentProducts', product);
+            });
+        }
+
+        return api.post('/ai/professional-analysis', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    }
+
     // Utility Methods
     setAuthToken(token: string | null) {
         if (token) {
@@ -781,6 +806,7 @@ export const aiService = {
     validateSkinArea: apiService.validateSkinArea.bind(apiService),
     getAvailableConditions: apiService.getAvailableConditions.bind(apiService),
     checkHealth: apiService.checkAIHealth.bind(apiService),
+    getProfessionalSkinAnalysis: apiService.getProfessionalSkinAnalysis.bind(apiService),
 };
 
 export const userService = {

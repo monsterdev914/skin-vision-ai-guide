@@ -6,9 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Camera as CameraIcon, CameraOff, RotateCcw, CheckCircle, AlertTriangle, Info, Loader2, User, UserX, Scan, Users } from 'lucide-react';
+import { Camera as CameraIcon, CameraOff, RotateCcw, CheckCircle, AlertTriangle, Info, Loader2, User, UserX } from 'lucide-react';
 import { aiService } from '@/lib/api';
-import { SkinDetectionService, SkinRegion, SkinDetectionResult } from '@/services/skinDetection';
 
 interface CameraCaptureProps {
   onImageCapture: (imageFile: File, imageUrl: string) => void;
@@ -41,7 +40,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
   const [skinValidation, setSkinValidation] = useState<any>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [webcamKey, setWebcamKey] = useState(0); // Key to force webcam re-mount
-  const [faceDetectionEnabled, setFaceDetectionEnabled] = useState(true); // Always enabled
   
   // Face detection state
   const [faceDetection, setFaceDetection] = useState<FaceDetection | null>(null);
@@ -51,16 +49,23 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
   const [facesDetected, setFacesDetected] = useState(0);
   const [boundingBox, setBoundingBox] = useState<BoundingBox[]>([]);
   
-  // Skin detection state
-  const [skinDetectionService] = useState(() => new SkinDetectionService());
-  const [skinRegions, setSkinRegions] = useState<SkinRegion[]>([]);
-  const [skinDetectionResult, setSkinDetectionResult] = useState<SkinDetectionResult | null>(null);
-  const [isSkinDetectionLoading, setIsSkinDetectionLoading] = useState(false);
+  // Video constraints
+  const getVideoConstraints = () => {
+    return {
+      width: { ideal: 1280, min: 640 },
+      height: { ideal: 720, min: 480 },
+      facingMode: { ideal: 'user' },
+      frameRate: { ideal: 30, min: 10 },
+    };
+  };
+
+  // Ultra-minimal constraints for fallback
+  const getMinimalConstraints = () => {
+    return {}; // No constraints at all - just grab any camera
+  };
 
   // Initialize MediaPipe Face Detection
   useEffect(() => {
-    if (!faceDetectionEnabled) return;
-
     const initializeFaceDetection = async () => {
       setIsFaceDetectionLoading(true);
       
@@ -112,32 +117,11 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
         camera.stop();
       }
     };
-  }, [faceDetectionEnabled]);
-
-  // Initialize skin detection service
-  useEffect(() => {
-    const initializeSkinDetection = async () => {
-      try {
-        setIsSkinDetectionLoading(true);
-        await skinDetectionService.initialize();
-        console.log('✅ Skin detection service initialized');
-      } catch (error) {
-        console.error('❌ Failed to initialize skin detection:', error);
-      } finally {
-        setIsSkinDetectionLoading(false);
-      }
-    };
-
-    initializeSkinDetection();
-
-    return () => {
-      skinDetectionService.dispose();
-    };
-  }, [skinDetectionService]);
+  }, []);
 
   // Start camera for face detection
   useEffect(() => {
-    if (!faceDetection || !webcamRef.current?.video || !cameraReady || !faceDetectionEnabled) {
+    if (!faceDetection || !webcamRef.current?.video || !cameraReady) {
       return;
     }
 
@@ -159,22 +143,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
     return () => {
       cameraInstance.stop();
     };
-  }, [faceDetection, cameraReady, faceDetectionEnabled]);
-
-  // Video constraints
-  const getVideoConstraints = () => {
-    return {
-      width: { ideal: 1280, min: 640 },
-      height: { ideal: 720, min: 480 },
-      facingMode: { ideal: 'user' },
-      frameRate: { ideal: 30, min: 10 },
-    };
-  };
-
-  // Ultra-minimal constraints for fallback
-  const getMinimalConstraints = () => {
-    return {}; // No constraints at all - just grab any camera
-  };
+  }, [faceDetection, cameraReady]);
 
   // Function to get screenshot from webcam
   const getScreenshot = useCallback(() => {
@@ -217,7 +186,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
           break;
         case 'OverconstrainedError':
         case 'ConstraintNotSatisfiedError':
-          // Allow fallback in both modes now
           errorMessage = 'Camera constraints not supported. Trying with minimal constraints...';
           shouldRetryWithMinimalConstraints = true;
           break;
@@ -232,679 +200,414 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture, onError }
       }
     }
 
+    setError(errorMessage);
+    
+    // Retry with minimal constraints if needed
     if (shouldRetryWithMinimalConstraints) {
-      console.log(`🔄 Retrying with minimal constraints...`);
-      // Force webcam component to remount with no constraints
+      console.log('Retrying with minimal constraints...');
+      setTimeout(() => {
       setWebcamKey(prev => prev + 1);
-      setError('Retrying with minimal camera constraints...');
-      return;
+        setError(null);
+      }, 2000);
     }
     
-    setError(errorMessage);
-    setIsStreaming(false);
-    onError?.(errorMessage);
+    if (onError) {
+      onError(errorMessage);
+    }
   }, [onError]);
 
-  const performSkinDetection = useCallback(async (imageSrc: string) => {
-    try {
-      // Create image element for skin detection
+  // Basic quality checks without MediaPipe
+  const performQualityCheck = useCallback(async (imageData: string): Promise<QualityCheck> => {
+    return new Promise((resolve) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
-      
-      return new Promise<SkinDetectionResult>((resolve, reject) => {
-        img.onload = async () => {
-          try {
-            const result = await skinDetectionService.detectSkinAreas(img);
-            resolve(result);
-          } catch (error) {
-            reject(error);
-          }
-        };
-        img.onerror = () => reject(new Error('Failed to load image for skin detection'));
-        img.src = imageSrc;
-      });
-    } catch (error) {
-      console.error('Skin detection error:', error);
-      return {
-        success: false,
-        regions: [],
-        totalSkinArea: 0,
-        totalImageArea: 0,
-        skinCoveragePercentage: 0,
-        message: `Skin detection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      };
-    }
-  }, [skinDetectionService]);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          resolve({
+            resolution: 'error',
+            lighting: 'error',
+            blur: 'error',
+            face: 'error'
+          });
+          return;
+        }
 
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // Resolution check
+        const resolution = img.width >= 640 && img.height >= 480 ? 'good' : 
+                         img.width >= 320 && img.height >= 240 ? 'warning' : 'error';
+        
+        // Lighting check - average brightness
+        let totalBrightness = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          totalBrightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
+        }
+        const avgBrightness = totalBrightness / (data.length / 4);
+        const lighting = avgBrightness > 50 && avgBrightness < 200 ? 'good' : 
+                        avgBrightness > 30 && avgBrightness < 220 ? 'warning' : 'error';
+        
+        // Basic blur detection using variance
+        let variance = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+          variance += Math.pow(brightness - avgBrightness, 2);
+        }
+        variance = variance / (data.length / 4);
+        const blur = variance > 1000 ? 'good' : variance > 500 ? 'warning' : 'error';
+        
+        // Face detection simplified - just check if there's a face-like region
+        const face = 'good'; // Since we can't detect faces without MediaPipe, assume good
+        
+        resolve({ resolution, lighting, blur, face });
+      };
+      img.src = imageData;
+    });
+  }, []);
+
+  // Capture image with quality checks
   const captureImage = useCallback(async () => {
-    if (!webcamRef.current || !cameraReady) {
-      setError('Camera not ready. Please wait for the camera to initialize.');
+    if (!cameraReady) {
+      setError('Camera not ready');
+      return;
+    }
+
+    if (!faceDetected) {
+      setError('Please position your face in the camera view');
       return;
     }
 
     setIsCapturing(true);
+    setError(null);
     
     try {
-      // Capture image from webcam
       const imageSrc = getScreenshot();
-      
       if (!imageSrc) {
-        throw new Error('Failed to capture image from camera');
+        throw new Error('Failed to capture image');
       }
 
-      setCapturedImage(imageSrc);
-
-      // Quality assessment using the new assessment function
-      const quality = assessImageQuality(imageSrc);
+      // Perform quality checks
+      const quality = await performQualityCheck(imageSrc);
       setQualityChecks(quality);
 
-      // Check for face detection errors
-      if (faceDetectionEnabled && quality.face === 'error') {
-        setError('No face detected in the captured image. Please ensure your face is clearly visible and try again.');
+      // Check if quality is acceptable
+      const hasError = Object.values(quality).some(check => check === 'error');
+      if (hasError) {
+        setError('Image quality too low. Please ensure good lighting and hold the camera steady.');
         setIsCapturing(false);
         return;
       }
 
-      // Perform comprehensive skin area detection
-      console.log('🔍 Performing comprehensive skin area detection...');
-      const skinResult = await performSkinDetection(imageSrc);
-      setSkinDetectionResult(skinResult);
-      setSkinRegions(skinResult.regions);
+      setCapturedImage(imageSrc);
+      setIsValidating(true);
 
-      if (skinResult.success) {
-        console.log(`✅ Detected ${skinResult.regions.length} skin regions covering ${skinResult.skinCoveragePercentage.toFixed(1)}% of image`);
-        
-        // Log detected body parts
-        const bodyParts = skinResult.regions.map(r => r.bodyPart);
-        const uniqueBodyParts = [...new Set(bodyParts)];
-        console.log('📍 Detected body parts:', uniqueBodyParts.join(', '));
-      } else {
-        console.log('⚠️ Skin detection failed:', skinResult.message);
-      }
-
-      // Convert data URL to blob and create file
+      // Convert to file
       const response = await fetch(imageSrc);
       const blob = await response.blob();
-      
-      const file = new File([blob], `camera-capture-${Date.now()}.jpg`, {
-        type: 'image/jpeg',
-        lastModified: Date.now(),
-      });
+      const file = new File([blob], 'captured-image.jpg', { type: 'image/jpeg' });
 
-      // Validate with backend AI
-      setIsValidating(true);
-      try {
-        console.log('Validating captured image with comprehensive skin analysis...');
+      // Validate skin area
         const validation = await aiService.validateSkinArea(file);
         setSkinValidation(validation);
+
+      setIsValidating(false);
         
         if (validation.success && validation.data?.suitable) {
-          console.log('✅ Backend validation passed');
-          onImageCapture(file, imageSrc);
-        } else {
-          console.log('⚠️ Backend validation failed:', validation.message);
-          // Still allow capture but show warning
-          onImageCapture(file, imageSrc);
-        }
-      } catch (validationError) {
-        console.error('Backend validation error:', validationError);
-        // Still allow capture if validation fails
         onImageCapture(file, imageSrc);
-      } finally {
-        setIsValidating(false);
+      } else {
+        setError(validation.message || 'Image not suitable for skin analysis');
       }
-
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to capture image';
-      setError(errorMessage);
-      onError?.(errorMessage);
+      console.error('Capture error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to capture image');
+      setIsValidating(false);
     } finally {
       setIsCapturing(false);
     }
-  }, [cameraReady, onImageCapture, onError, getScreenshot, faceDetectionEnabled, performSkinDetection]);
+  }, [cameraReady, faceDetected, getScreenshot, performQualityCheck, onImageCapture]);
 
-  const retakePhoto = useCallback(() => {
+  // Reset capture state
+  const resetCapture = useCallback(() => {
     setCapturedImage(null);
     setQualityChecks(null);
-    setError(null);
     setSkinValidation(null);
-    setIsValidating(false);
-    setSkinRegions([]);
-    setSkinDetectionResult(null);
-  }, []);
-
-  const stopCamera = useCallback(() => {
-    setIsStreaming(false);
-    setCameraReady(false);
-    setCapturedImage(null);
-    setQualityChecks(null);
-    setError(null);
-    setSkinValidation(null);
-    setIsValidating(false);
-    setSkinRegions([]);
-    setSkinDetectionResult(null);
-    setWebcamKey(0); // Reset webcam key
-  }, []);
-
-  const startCamera = useCallback(() => {
-    setIsStreaming(true);
     setError(null);
   }, []);
 
-  const forceRestartCamera = useCallback(() => {
-    console.log('🔄 Force restarting camera...');
-    stopCamera();
+  // Restart camera
+  const restartCamera = useCallback(() => {
     setWebcamKey(prev => prev + 1);
-    setTimeout(() => {
-      setIsStreaming(true);
-    }, 100);
-  }, [stopCamera]);
+    setCameraReady(false);
+    setError(null);
+    setFaceDetected(false);
+    setFacesDetected(0);
+    setBoundingBox([]);
+    resetCapture();
+  }, [resetCapture]);
 
+  // Get quality status icon
   const getQualityIcon = (status: 'good' | 'warning' | 'error') => {
     switch (status) {
-      case 'good': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'warning': return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
-      case 'error': return <AlertTriangle className="w-4 h-4 text-red-500" />;
+      case 'good': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'warning': return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+      case 'error': return <AlertTriangle className="h-4 w-4 text-red-500" />;
     }
   };
 
+  // Get quality text
   const getQualityText = (type: keyof QualityCheck, status: 'good' | 'warning' | 'error') => {
-    const messages = {
+    const texts = {
       resolution: {
-        good: 'High resolution (1280x720+)',
-        warning: 'Medium resolution (640x480+)',
-        error: 'Low resolution (below 640x480)'
+        good: 'High resolution',
+        warning: 'Medium resolution',
+        error: 'Low resolution'
       },
       lighting: {
-        good: 'Good lighting conditions',
-        warning: 'Lighting could be improved',
-        error: 'Poor lighting - too dark or bright'
+        good: 'Good lighting',
+        warning: 'Acceptable lighting',
+        error: 'Poor lighting'
       },
       blur: {
-        good: 'Sharp and clear image',
-        warning: 'Slightly blurry - hold steady',
-        error: 'Too blurry - stabilize camera'
+        good: 'Sharp image',
+        warning: 'Slightly blurred',
+        error: 'Too blurry'
       },
       face: {
-        good: faceDetectionEnabled ? 
-          `${facesDetected === 1 ? 'Single face detected perfectly' : 'Face detected in frame'}` : 
-          'Face area looks good',
-        warning: faceDetectionEnabled ? 
-          `${facesDetected > 1 ? `${facesDetected} faces detected - use single person` : 'Face partially visible'}` : 
-          'Face partially visible',
-        error: faceDetectionEnabled ? 
-          'No face detected - position face in frame' : 
-          'No clear face detected'
+        good: 'Face detected',
+        warning: 'Face partially visible',
+        error: 'No face detected'
       }
     };
-    return messages[type][status];
+    return texts[type][status];
   };
 
-  // Improved quality assessment based on image analysis
-  const assessImageQuality = useCallback((imageSrc: string): QualityCheck => {
-    // Create image element to analyze
-    const img = new Image();
-    img.src = imageSrc;
-    
-    // Basic quality assessment with face detection integration
-    const assessment: QualityCheck = {
-      resolution: 'good',
-      lighting: 'good', 
-      blur: 'good',
-      face: 'good'
-    };
-
-    // Use face detection results for face quality assessment
-    if (faceDetectionEnabled && !isFaceDetectionLoading) {
-      if (!faceDetected || facesDetected === 0) {
-        assessment.face = 'error';
-      } else if (facesDetected === 1) {
-        assessment.face = 'good';
-      } else if (facesDetected > 1) {
-        assessment.face = 'warning'; // Multiple faces detected
-      }
-    }
-
-    // Default to good for other metrics
-    // This is where you could add actual image analysis for:
-    // - Resolution detection
-    // - Brightness/contrast analysis  
-    // - Blur detection
-    
-    return assessment;
-  }, [faceDetectionEnabled, isFaceDetectionLoading, faceDetected, facesDetected]);
-
   return (
-    <Card className="w-full max-w-2xl">
+    <div className="w-full max-w-2xl mx-auto space-y-4">
+      <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CameraIcon className="w-5 h-5" />
+            <CameraIcon className="h-5 w-5" />
           Camera Capture
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Instructions */}
-        <Alert>
-          <Info className="w-4 h-4" />
-          <AlertDescription>
-            Position your face in good lighting, ensure the camera is steady, and capture a clear image for the best analysis results.
-          </AlertDescription>
-        </Alert>
-
-        {/* Face Detection Status */}
-        {isStreaming && !capturedImage && (
-          <div className="p-3 border rounded-lg bg-blue-50">
-            <div className="flex items-center gap-2 mb-2">
-              {isFaceDetectionLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : faceDetected ? (
-                <User className="w-4 h-4 text-green-600" />
-              ) : (
-                <UserX className="w-4 h-4 text-red-600" />
-              )}
-              <h4 className="text-sm font-medium">Face Detection</h4>
-            </div>
-            
-            {isFaceDetectionLoading ? (
-              <p className="text-xs text-gray-600">Loading face detection model...</p>
-            ) : (
-              <div className="space-y-1">
-                <p className="text-xs">
-                  Status: <span className={`font-medium ${faceDetected ? 'text-green-600' : 'text-red-600'}`}>
-                    {faceDetected ? `${facesDetected} face(s) detected` : 'No face detected'}
-                  </span>
-                </p>
-                {facesDetected > 1 && (
-                  <p className="text-xs text-yellow-600">
-                    ⚠️ Multiple faces detected. For best results, ensure only one person is in frame.
-                  </p>
-                )}
-                {!faceDetected && (
-                  <p className="text-xs text-red-600">
-                    📹 Please position your face clearly in the camera view
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Skin Detection Status */}
-        {isStreaming && !capturedImage && (
-          <div className="p-3 border rounded-lg bg-purple-50">
-            <div className="flex items-center gap-2 mb-2">
-              {isSkinDetectionLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Scan className="w-4 h-4 text-purple-600" />
-              )}
-              <h4 className="text-sm font-medium">Comprehensive Skin Detection</h4>
-            </div>
-            
-            {isSkinDetectionLoading ? (
-              <p className="text-xs text-gray-600">Initializing skin detection model...</p>
-            ) : (
-              <div className="space-y-1">
-                <p className="text-xs text-purple-700">
-                  🎯 Ready to detect skin areas across entire body (face, arms, hands, torso, legs, etc.)
-                </p>
-                <p className="text-xs text-purple-600">
-                  💡 Expose any skin areas for comprehensive analysis
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Error Display */}
-        {error && (
-          <Alert variant="destructive">
-            <AlertTriangle className="w-4 h-4" />
-            <AlertDescription>
-              {error}
-              <div className="mt-2 text-xs">
-                <strong>Troubleshooting:</strong>
-                <br />• Make sure you're using HTTPS or localhost
-                <br />• Allow camera permissions when prompted
-                <br />• Close other apps that might be using your camera
-                <br />• Try refreshing the page
-                <br />• Try the "Force Restart" button below to retry with minimal constraints
-              </div>
-              <div className="mt-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={forceRestartCamera}
-                  className="text-xs"
-                >
-                  🔄 Force Restart Camera
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Camera Controls */}
-        <div className="flex gap-2 justify-center">
-          {!isStreaming ? (
-            <Button 
-              onClick={startCamera}
-              className="flex items-center gap-2"
-            >
-              <CameraIcon className="w-4 h-4" />
-              Start Camera
-            </Button>
-          ) : (
-            <>
-              <Button 
-                onClick={captureImage} 
-                disabled={!cameraReady || isCapturing || isValidating || isSkinDetectionLoading || (faceDetectionEnabled && !faceDetected)}
-                className="flex items-center gap-2"
-              >
-                {isCapturing || isValidating || isSkinDetectionLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CameraIcon className="w-4 h-4" />
-                )}
-                {isCapturing ? 'Capturing...' : 
-                 isValidating ? 'Validating...' : 
-                 isSkinDetectionLoading ? 'Loading Skin Detection...' :
-                 (faceDetectionEnabled && !faceDetected) ? 'No Face Detected' : 'Capture Photo'}
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={stopCamera}
-                className="flex items-center gap-2"
-              >
-                <CameraOff className="w-4 h-4" />
-                Stop Camera
-              </Button>
-            </>
-          )}
-          
-          {capturedImage && (
-            <Button 
-              variant="outline" 
-              onClick={retakePhoto}
-              className="flex items-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Retake
-            </Button>
-          )}
-        </div>
-
-        {/* Camera Preview */}
-        {isStreaming && !capturedImage && (
-          <div className="relative">
+          {/* Camera Stream */}
+          <div className="relative bg-black rounded-lg overflow-hidden">
             <Webcam
-              key={`webcam-${webcamKey}`} // Force remount when key changes
+              key={webcamKey}
               ref={webcamRef}
               audio={false}
-              height={400}
               screenshotFormat="image/jpeg"
-              width="100%"
-              videoConstraints={webcamKey > 0 ? getMinimalConstraints() : getVideoConstraints()}
+              screenshotQuality={1}
+              videoConstraints={getVideoConstraints()}
               onUserMedia={handleUserMedia}
               onUserMediaError={handleUserMediaError}
-              className="w-full rounded-lg border"
-              style={{ maxHeight: '400px' }}
+              style={{
+                width: '100%',
+                height: 'auto',
+                maxHeight: '400px',
+                objectFit: 'cover',
+                display: cameraReady ? 'block' : 'none'
+              }}
             />
             
-            {/* Face Detection Bounding Boxes */}
-            {faceDetectionEnabled && boundingBox && boundingBox.length > 0 && (
+            {/* Loading overlay */}
+            {!cameraReady && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                <div className="text-center text-white">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  <p>Starting camera...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Face detection overlay */}
+            {cameraReady && (
               <div className="absolute inset-0 pointer-events-none">
+                {/* Face detection bounding boxes */}
                 {boundingBox.map((box, index) => (
                   <div
                     key={index}
-                    className="absolute border-2 border-green-400 bg-green-400/10 rounded"
+                    className="absolute border-2 border-green-400 rounded-lg"
                     style={{
                       left: `${box.xCenter - box.width / 2}%`,
                       top: `${box.yCenter - box.height / 2}%`,
                       width: `${box.width}%`,
                       height: `${box.height}%`,
                     }}
-                  >
-                    <div className="absolute -top-6 left-0 bg-green-400 text-white text-xs px-1 rounded">
-                      Face {index + 1}
-                    </div>
-                  </div>
+                  />
                 ))}
-              </div>
-            )}
-
-            {/* Skin Region Overlays */}
-            {skinRegions.length > 0 && capturedImage && (
-              <div className="absolute inset-0 pointer-events-none">
-                {skinRegions.map((region, index) => {
-                  // Calculate normalized coordinates
-                  const imageElement = webcamRef.current?.video;
-                  if (!imageElement) return null;
-                  
-                  const scaleX = 100 / imageElement.videoWidth;
-                  const scaleY = 100 / imageElement.videoHeight;
-                  
-                  return (
-                    <div
-                      key={region.id}
-                      className="absolute border-2 border-purple-500 bg-purple-500/10 rounded"
-                      style={{
-                        left: `${region.boundingBox.x * scaleX}%`,
-                        top: `${region.boundingBox.y * scaleY}%`,
-                        width: `${region.boundingBox.width * scaleX}%`,
-                        height: `${region.boundingBox.height * scaleY}%`,
-                      }}
-                    >
-                      <div className="absolute -top-6 left-0 bg-purple-500 text-white text-xs px-1 rounded">
-                        {region.bodyPart}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            
-            {!cameraReady && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                <div className="text-center">
-                  <Loader2 className="w-8 h-8 mx-auto mb-2 text-gray-400 animate-spin" />
-                  <p className="text-gray-600">
-                    {webcamKey > 0 ? (
-                      'Retrying with minimal constraints...'
+                
+                {/* Face detection status */}
+                <div className="absolute top-4 right-4 bg-black bg-opacity-50 rounded-lg p-2">
+                  <div className="flex items-center gap-2 text-white text-sm">
+                    {isFaceDetectionLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Initializing...</span>
+                      </>
+                    ) : faceDetected ? (
+                      <>
+                        <User className="h-4 w-4 text-green-400" />
+                        <span className="text-green-400">Face Detected</span>
+                      </>
                     ) : (
-                      'Loading camera...'
+                      <>
+                        <UserX className="h-4 w-4 text-red-400" />
+                        <span className="text-red-400">No Face</span>
+                      </>
                     )}
-                  </p>
+                  </div>
                 </div>
               </div>
             )}
-            {cameraReady && (
-              <div className="absolute top-2 right-2">
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  {webcamKey > 0 ? 'Minimal Mode' : 'Normal Mode'}
-                </Badge>
-              </div>
-            )}
           </div>
-        )}
 
-        {/* Captured Image Preview */}
-        {capturedImage && (
-          <div className="space-y-4">
-            <img
-              src={capturedImage}
-              alt="Captured"
-              className="w-full rounded-lg border"
-              style={{ maxHeight: '400px', objectFit: 'contain' }}
-            />
-            
-            {/* AI Validation Status */}
-            {isValidating && (
-              <Alert>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <AlertDescription>
-                  Validating image with AI for skin analysis suitability...
-                </AlertDescription>
+          {/* Error Display */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            {/* Quality Assessment */}
-            {qualityChecks && (
-              <div className="space-y-3">
-                <h4 className="font-medium">Image Quality Assessment</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {(Object.entries(qualityChecks) as [keyof QualityCheck, 'good' | 'warning' | 'error'][]).map(([key, status]) => (
-                    <div key={key} className="flex items-center gap-3 p-3 border rounded-lg">
-                      {getQualityIcon(status)}
-                      <div className="flex-1">
-                        <p className="text-sm font-medium capitalize">{key}</p>
-                        <p className="text-xs text-gray-600">{getQualityText(key, status)}</p>
-                      </div>
-                      <Badge 
-                        variant={status === 'good' ? 'default' : status === 'warning' ? 'secondary' : 'destructive'}
-                        className="text-xs"
-                      >
-                        {status}
-                      </Badge>
+          {/* Controls */}
+          <div className="flex gap-2">
+            <Button
+              onClick={captureImage}
+              disabled={!cameraReady || isCapturing || isValidating || isFaceDetectionLoading || !faceDetected}
+              className="flex-1"
+            >
+              {isCapturing || isValidating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {isCapturing ? 'Capturing...' : 'Validating...'}
+                </>
+              ) : isFaceDetectionLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Loading Face Detection...
+                </>
+              ) : !faceDetected ? (
+                <>
+                  <UserX className="h-4 w-4 mr-2" />
+                  Position Your Face
+                </>
+              ) : (
+                <>
+                  <CameraIcon className="h-4 w-4 mr-2" />
+                  Capture Image
+                </>
+              )}
+            </Button>
+            
+            <Button
+              onClick={restartCamera}
+              variant="outline"
+              disabled={isCapturing || isValidating}
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
                     </div>
-                  ))}
+
+          {/* Face Detection Status */}
+          {cameraReady && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  {faceDetected ? (
+                    <User className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <UserX className="h-4 w-4 text-red-500" />
+                  )}
+                  Face Detection
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center gap-2">
+                  {isFaceDetectionLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                      <span className="text-sm">Initializing face detection...</span>
+                    </>
+                  ) : faceDetected ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">
+                        {facesDetected} face{facesDetected !== 1 ? 's' : ''} detected
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="h-4 w-4 text-red-500" />
+                      <span className="text-sm">No face detected - position your face in the camera</span>
+                    </>
+                  )}
                 </div>
                 
-                {/* Overall Quality Status */}
-                {Object.values(qualityChecks).includes('error') && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="w-4 h-4" />
-                    <AlertDescription>
-                      Image quality issues detected. Please retake the photo with better lighting and positioning for optimal analysis results.
-                    </AlertDescription>
-                  </Alert>
+                {facesDetected > 1 && (
+                  <div className="text-xs text-yellow-600">
+                    <Info className="h-3 w-3 inline mr-1" />
+                    Multiple faces detected - ensure only one person is in frame
+                  </div>
                 )}
-                
-                {Object.values(qualityChecks).includes('warning') && !Object.values(qualityChecks).includes('error') && (
-                  <Alert>
-                    <Info className="w-4 h-4" />
-                    <AlertDescription>
-                      Image quality is acceptable but could be improved. Consider retaking for better analysis accuracy.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                {Object.values(qualityChecks).every(status => status === 'good') && (
-                  <Alert>
-                    <CheckCircle className="w-4 h-4" />
-                    <AlertDescription className="text-green-700">
-                      Excellent image quality! This image is ready for analysis.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
+              </CardContent>
+            </Card>
+          )}
 
-            {/* AI Validation Results */}
-            {/* Comprehensive Skin Detection Results */}
-            {skinDetectionResult && capturedImage && (
-              <div className="space-y-3">
-                <h4 className="font-medium flex items-center gap-2">
-                  <Scan className="w-4 h-4" />
-                  Comprehensive Skin Detection Results
-                </h4>
-                
-                {skinDetectionResult.success ? (
-                  <Alert>
-                    <CheckCircle className="w-4 h-4" />
-                    <AlertDescription className="text-green-700">
-                      <div className="space-y-2">
-                        <div>
-                          ✅ <strong>Detected {skinDetectionResult.regions.length} skin regions</strong> covering{' '}
-                          <strong>{skinDetectionResult.skinCoveragePercentage.toFixed(1)}%</strong> of the image
-                        </div>
-                        
-                        {skinDetectionResult.regions.length > 0 && (
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            {skinDetectionResult.regions.map((region, index) => (
-                              <div key={region.id} className="flex items-center gap-1">
-                                <Badge 
-                                  variant="outline" 
-                                  className="text-xs"
-                                  style={{ 
-                                    borderColor: `hsl(${(index * 360) / skinDetectionResult.regions.length}, 70%, 50%)`,
-                                    color: `hsl(${(index * 360) / skinDetectionResult.regions.length}, 70%, 40%)`
-                                  }}
-                                >
-                                  {region.bodyPart}
-                                </Badge>
-                                <span className="text-gray-600">
-                                  {(region.area / 1000).toFixed(1)}k px
+          {/* Quality Checks */}
+          {qualityChecks && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Image Quality</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {Object.entries(qualityChecks).map(([key, status]) => (
+                  <div key={key} className="flex items-center gap-2">
+                    {getQualityIcon(status)}
+                    <span className="text-sm">
+                      {getQualityText(key as keyof QualityCheck, status)}
                                 </span>
                               </div>
                             ))}
-                          </div>
-                        )}
-                        
-                        <div className="text-xs text-gray-600 mt-2">
-                          <strong>Body parts detected:</strong> {
-                            [...new Set(skinDetectionResult.regions.map(r => r.bodyPart))]
-                              .filter(part => part !== 'unknown')
-                              .join(', ') || 'Various skin areas'
-                          }
-                        </div>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="w-4 h-4" />
-                    <AlertDescription>
-                      ⚠️ {skinDetectionResult.message}
-                      <div className="mt-2 text-xs">
-                        <strong>Tip:</strong> Ensure adequate lighting and expose some skin areas (face, arms, hands, etc.) for optimal detection.
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
+              </CardContent>
+            </Card>
+          )}
 
-            {skinValidation && !isValidating && (
-              <div className="space-y-3">
-                <h4 className="font-medium">
-                  Backend AI Validation
-                </h4>
-                
+          {/* Skin Validation Results */}
+          {skinValidation && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Skin Area Validation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 {skinValidation.success && skinValidation.data?.suitable ? (
-                  <Alert>
-                    <CheckCircle className="w-4 h-4" />
-                    <AlertDescription className="text-green-700">
-                      ✅ Backend AI confirmed suitable skin areas for comprehensive analysis.
-                      {skinValidation.data.visibleSkinAreas && (
-                        <div className="mt-2 text-xs">
-                          <strong>Backend detected regions:</strong> {
-                            Object.entries(skinValidation.data.visibleSkinAreas)
-                              .filter(([_, detected]) => detected)
-                              .map(([region, _]) => region)
-                              .join(', ') || 'Various skin areas'
-                          }
+                  <div className="text-green-600">
+                    <CheckCircle className="h-4 w-4 inline mr-2" />
+                    ✅ <strong>Image suitable for analysis</strong>
                         </div>
-                      )}
-                    </AlertDescription>
-                  </Alert>
                 ) : (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="w-4 h-4" />
-                    <AlertDescription>
-                      ⚠️ {skinValidation.message || 'Backend validation found issues with the image'}
-                      <div className="mt-2 text-xs">
-                        <strong>Suggestions:</strong> Ensure good lighting, position skin areas clearly in frame, and remove any obstructions. Any exposed skin (face, arms, hands, etc.) can be analyzed.
+                  <div className="text-red-600">
+                    <AlertTriangle className="h-4 w-4 inline mr-2" />
+                    ⚠️ {skinValidation.message || 'Image not suitable for analysis'}
                       </div>
-                    </AlertDescription>
-                  </Alert>
                 )}
-              </div>
-            )}
-          </div>
+              </CardContent>
+            </Card>
         )}
       </CardContent>
     </Card>
+    </div>
   );
 };
 
