@@ -52,32 +52,22 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
   // Update image dimensions with proper calculations
   const updateImageDimensions = () => {
     if (imageRef.current) {
-      // Get image dimensions at base zoom level (1.0)
+      // Get the actual rendered size from getBoundingClientRect (most accurate)
+      const imageRect = imageRef.current.getBoundingClientRect();
       const naturalWidth = imageRef.current.naturalWidth;
       const naturalHeight = imageRef.current.naturalHeight;
       
-      // Get the actual displayed size without transform effects
-      const maxHeight = 600;
-      const maxWidth = imageRef.current.parentElement?.clientWidth || 800;
+      // Get the actual displayed size from the image element's computed style
+      const computedStyle = window.getComputedStyle(imageRef.current);
+      const actualWidth = parseFloat(computedStyle.width);
+      const actualHeight = parseFloat(computedStyle.height);
       
-      // Calculate displayed size respecting max constraints
-      let displayWidth = naturalWidth;
-      let displayHeight = naturalHeight;
-      
-      if (displayHeight > maxHeight) {
-        const aspectRatio = naturalWidth / naturalHeight;
-        displayHeight = maxHeight;
-        displayWidth = displayHeight * aspectRatio;
-      }
-      
-      if (displayWidth > maxWidth) {
-        const aspectRatio = naturalHeight / naturalWidth;
-        displayWidth = maxWidth;
-        displayHeight = displayWidth * aspectRatio;
-      }
+      // Use the actual rendered size (before zoom transform)
+      const displayWidth = actualWidth || imageRect.width / zoom;
+      const displayHeight = actualHeight || imageRect.height / zoom;
       
       // Only update if dimensions have actually changed
-      if (displayWidth !== actualImageSize.width || displayHeight !== actualImageSize.height) {
+      if (Math.abs(displayWidth - actualImageSize.width) > 1 || Math.abs(displayHeight - actualImageSize.height) > 1) {
         setActualImageSize({
           width: displayWidth,
           height: displayHeight
@@ -94,7 +84,8 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
       console.log('Image dimensions updated:', {
         displayed: { width: displayWidth, height: displayHeight },
         natural: { width: naturalWidth, height: naturalHeight },
-        zoom: zoom
+        zoom: zoom,
+        rendered: { width: imageRect.width, height: imageRect.height }
       });
     }
   };
@@ -365,11 +356,15 @@ const ImageWithOverlays: React.FC<ImageWithOverlaysProps> = ({
               />
               
               {/* Overlays - positioned relative to the image */}
-              {showOverlays && imageLoaded && actualImageSize.width > 0 && (
+              {showOverlays && imageLoaded && actualImageSize.width > 0 && imageRef.current && (
                 <div 
-                  className="absolute inset-0 pointer-events-none transition-opacity duration-500 ease-in-out"
+                  className="absolute pointer-events-none transition-opacity duration-500 ease-in-out"
                   style={{ 
-                    transform: `scale(${zoom})`,
+                    left: '50%',
+                    top: '50%',
+                    width: `${actualImageSize.width}px`,
+                    height: `${actualImageSize.height}px`,
+                    transform: `translate(-50%, -50%) scale(${zoom})`,
                     transformOrigin: 'center',
                     opacity: showOverlays ? 1 : 0
                   }}
