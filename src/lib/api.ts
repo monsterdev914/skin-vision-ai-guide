@@ -791,15 +791,14 @@ class ApiService {
     }
 
     async updateSubscription(subscriptionId: string, data: {
-        planId: string;
-        billingCycle: 'monthly' | 'yearly';
+        planId: string
     }): Promise<ApiResponse<{ subscription: any }>> {
         return api.put(`/subscriptions/${subscriptionId}`, data);
     }
 
-    async getSubscriptionPreview(subscriptionId: string, planId: string, billingCycle: 'monthly' | 'yearly'): Promise<ApiResponse<{ preview: any; currentPlan: any; newPlan: any }>> {
+    async getSubscriptionPreview(subscriptionId: string, planId: string): Promise<ApiResponse<{ preview: any; currentPlan: any; newPlan: any }>> {
         return api.get(`/subscriptions/${subscriptionId}/preview`, {
-            params: { planId, billingCycle }
+            params: { planId }
         });
     }
 
