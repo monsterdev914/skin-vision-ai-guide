@@ -36,9 +36,9 @@ const Navbar = () => {
               <button onClick={() => handleSectionClick('features')} className="text-gray-600 hover:text-gray-900 transition-colors font-medium">
                 Features
               </button>
-              <button onClick={() => handleSectionClick('pricing')} className="text-gray-600 hover:text-gray-900 transition-colors font-medium">
+              <Link to="/pricing" className="text-gray-600 hover:text-gray-900 transition-colors font-medium">
                 Pricing
-              </button>
+              </Link>
               <button onClick={() => handleSectionClick('testimonials')} className="text-gray-600 hover:text-gray-900 transition-colors font-medium">
                 About
               </button>
@@ -76,9 +76,9 @@ const Navbar = () => {
               <button onClick={() => handleSectionClick('features')} className="block w-full text-left px-3 py-2 text-gray-600 hover:text-gray-900 font-medium">
                 Features
               </button>
-              <button onClick={() => handleSectionClick('pricing')} className="block w-full text-left px-3 py-2 text-gray-600 hover:text-gray-900 font-medium">
+              <Link to="/pricing" className="block w-full text-left px-3 py-2 text-gray-600 hover:text-gray-900 font-medium">
                 Pricing
-              </button>
+              </Link>
               <button onClick={() => handleSectionClick('testimonials')} className="block w-full text-left px-3 py-2 text-gray-600 hover:text-gray-900 font-medium">
                 About
               </button>

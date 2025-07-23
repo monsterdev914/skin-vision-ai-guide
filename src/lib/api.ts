@@ -756,6 +756,95 @@ class ApiService {
         });
     }
 
+    // Subscription Management Methods
+    async getCurrentSubscription(): Promise<ApiResponse<{ subscription: any }>> {
+        return api.get('/subscriptions/current');
+    }
+
+    async getSubscriptionHistory(limit?: number): Promise<ApiResponse<{ subscriptions: any[] }>> {
+        return api.get('/subscriptions/history', { params: { limit } });
+    }
+
+    async getSubscriptionLogs(limit?: number): Promise<ApiResponse<{ logs: any[] }>> {
+        return api.get('/subscriptions/logs', { params: { limit } });
+    }
+
+    async createSubscription(data: {
+        planId: string;
+        paymentMethodId?: string;
+    }): Promise<ApiResponse<{ 
+        subscription: any; 
+        status: string;
+        requiresAction: boolean;
+        clientSecret?: string;
+    }>> {
+        return api.post('/subscriptions', data);
+    }
+
+    async getSubscriptionStatus(subscriptionId: string): Promise<ApiResponse<{
+        subscription: any;
+        status: string;
+        isActive: boolean;
+        requiresPayment: boolean;
+    }>> {
+        return api.get(`/subscriptions/${subscriptionId}/status`);
+    }
+
+    async updateSubscription(subscriptionId: string, data: {
+        planId: string;
+        billingCycle: 'monthly' | 'yearly';
+    }): Promise<ApiResponse<{ subscription: any }>> {
+        return api.put(`/subscriptions/${subscriptionId}`, data);
+    }
+
+    async getSubscriptionPreview(subscriptionId: string, planId: string, billingCycle: 'monthly' | 'yearly'): Promise<ApiResponse<{ preview: any; currentPlan: any; newPlan: any }>> {
+        return api.get(`/subscriptions/${subscriptionId}/preview`, {
+            params: { planId, billingCycle }
+        });
+    }
+
+    async cancelSubscription(subscriptionId: string, cancelAtPeriodEnd: boolean = true): Promise<ApiResponse<{ subscription: any }>> {
+        return api.post(`/subscriptions/${subscriptionId}/cancel`, { cancelAtPeriodEnd });
+    }
+
+    async reactivateSubscription(subscriptionId: string): Promise<ApiResponse<{ subscription: any }>> {
+        return api.post(`/subscriptions/${subscriptionId}/reactivate`);
+    }
+
+    // Payment Method Management Methods
+    async getPaymentMethods(): Promise<ApiResponse<{ paymentMethods: any[] }>> {
+        return api.get('/payment-methods');
+    }
+
+    async getPaymentMethod(paymentMethodId: string): Promise<ApiResponse<{ paymentMethod: any }>> {
+        return api.get(`/payment-methods/${paymentMethodId}`);
+    }
+
+    async createSetupIntent(): Promise<ApiResponse<{ clientSecret: string; setupIntentId: string }>> {
+        return api.post('/payment-methods/setup-intent');
+    }
+
+    async confirmSetupIntent(setupIntentId: string, setAsDefault: boolean = false): Promise<ApiResponse<{ paymentMethod: any }>> {
+        return api.post('/payment-methods/confirm-setup-intent', { setupIntentId, setAsDefault });
+    }
+
+    async setDefaultPaymentMethod(paymentMethodId: string): Promise<ApiResponse<{ paymentMethod: any }>> {
+        return api.post(`/payment-methods/${paymentMethodId}/set-default`);
+    }
+
+    async deletePaymentMethod(paymentMethodId: string): Promise<ApiResponse> {
+        return api.delete(`/payment-methods/${paymentMethodId}`);
+    }
+
+    // Plan Management Methods
+    async getPlans(): Promise<ApiResponse<{ plans: any[] }>> {
+        return api.get('/plans');
+    }
+
+    async getPlan(planId: string): Promise<ApiResponse<{ plan: any }>> {
+        return api.get(`/plans/${planId}`);
+    }
+
     // Utility Methods
     setAuthToken(token: string | null) {
         if (token) {
@@ -846,6 +935,32 @@ export const notificationsService = {
     markAllAsRead: apiService.markAllNotificationsAsRead.bind(apiService),
     deleteNotification: apiService.deleteNotification.bind(apiService),
     createNotification: apiService.createNotification.bind(apiService),
+};
+
+export const subscriptionService = {
+    getCurrent: apiService.getCurrentSubscription.bind(apiService),
+    getHistory: apiService.getSubscriptionHistory.bind(apiService),
+    getLogs: apiService.getSubscriptionLogs.bind(apiService),
+    create: apiService.createSubscription.bind(apiService),
+    getStatus: apiService.getSubscriptionStatus.bind(apiService),
+    update: apiService.updateSubscription.bind(apiService),
+    getPreview: apiService.getSubscriptionPreview.bind(apiService),
+    cancel: apiService.cancelSubscription.bind(apiService),
+    reactivate: apiService.reactivateSubscription.bind(apiService),
+};
+
+export const paymentService = {
+    getPaymentMethods: apiService.getPaymentMethods.bind(apiService),
+    getPaymentMethod: apiService.getPaymentMethod.bind(apiService),
+    createSetupIntent: apiService.createSetupIntent.bind(apiService),
+    confirmSetupIntent: apiService.confirmSetupIntent.bind(apiService),
+    setDefault: apiService.setDefaultPaymentMethod.bind(apiService),
+    delete: apiService.deletePaymentMethod.bind(apiService),
+};
+
+export const planService = {
+    getPlans: apiService.getPlans.bind(apiService),
+    getPlan: apiService.getPlan.bind(apiService),
 };
 
 // Export the raw axios instance for advanced usage

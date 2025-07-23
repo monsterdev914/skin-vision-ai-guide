@@ -13,7 +13,7 @@ const CTASection = () => {
         </p>
         
         <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
-          <Link to="/dashboard">
+          <Link to="/">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3">
               <Camera className="mr-2 h-5 w-5" />
               Start Free Analysis

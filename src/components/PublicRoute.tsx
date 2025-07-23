@@ -26,7 +26,7 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
   // Redirect to dashboard if already authenticated
   if (isAuthenticated) {
     // Check if there's a redirect location from ProtectedRoute
-    const from = location.state?.from?.pathname || '/dashboard';
+    const from = location.state?.from?.pathname || '/';
     return <Navigate to={from} replace />;
   }
 

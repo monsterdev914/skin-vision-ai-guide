@@ -71,7 +71,7 @@ const Login = () => {
       });
 
       // Redirect to the original location or dashboard
-      const from = location.state?.from?.pathname || "/dashboard";
+      const from = location.state?.from?.pathname || "/";
       navigate(from, { replace: true });
     } catch (error: any) {
       console.error("Login failed:", error);

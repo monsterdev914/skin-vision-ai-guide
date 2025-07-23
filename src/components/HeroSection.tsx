@@ -28,7 +28,7 @@ const HeroSection = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center lg:justify-start items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
-              <Link to="/dashboard">
+              <Link to="/">
                 <Button size="lg" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 font-medium">
                   <Camera className="mr-2 h-5 w-5" />
                   Start Analysis
