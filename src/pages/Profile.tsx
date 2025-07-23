@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Mail, Calendar as CalendarIcon, Camera, Settings, Shield, Loader2 } from "lucide-react";
+import { User, Mail, Calendar as CalendarIcon, Camera, Settings, Shield, Loader2, Sparkles, Crown, Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { userService, UserProfile } from "@/lib/api";
+import { motion } from "framer-motion";
+import Ripple from "@/components/ui/ripple";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -275,12 +277,22 @@ const Profile = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
         <DashboardNavbar />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
+          <motion.div 
+            className="flex items-center justify-center h-64"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            >
+              <Loader2 className="w-8 h-8 text-blue-600" />
+            </motion.div>
+          </motion.div>
         </div>
       </div>
     );
@@ -288,66 +300,125 @@ const Profile = () => {
 
   if (!profileData) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
         <DashboardNavbar />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <p className="text-gray-600">Failed to load profile data</p>
-            <Button onClick={loadProfile} className="mt-4">
-              Try Again
-            </Button>
-          </div>
+          <motion.div 
+            className="text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <p className="text-gray-600 mb-4">Failed to load profile data</p>
+            <Ripple color="rgba(59, 130, 246, 0.2)" className="rounded-lg">
+              <Button onClick={loadProfile} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                Try Again
+              </Button>
+            </Ripple>
+          </motion.div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <DashboardNavbar />
       
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <motion.div 
+        className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            User Profile
-          </h1>
-          <p className="text-gray-600">
-            Manage your personal information and skin analysis preferences
-          </p>
-        </div>
+        <motion.div 
+          className="mb-8"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.1 }}
+        >
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 shadow-2xl">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="relative">
+              <div className="flex items-center space-x-4 mb-4">
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                >
+                  <User className="w-10 h-10 text-yellow-300" />
+                </motion.div>
+                <h1 className="text-4xl sm:text-5xl font-bold text-white">
+                  User Profile
+                </h1>
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                >
+                  <Crown className="w-8 h-8 text-yellow-300" />
+                </motion.div>
+              </div>
+              <p className="text-blue-100 text-lg max-w-2xl">
+                Manage your personal information and customize your skin analysis experience
+              </p>
+            </div>
+            
+            {/* Decorative Elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-yellow-400/20 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-400/20 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
+          </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
           {/* Profile Info */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center space-x-2">
-                      <User className="w-5 h-5" />
-                      <span>Personal Information</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Update your personal details and contact information
-                    </CardDescription>
+          <div className="lg:col-span-2 space-y-8">
+            <motion.div
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-blue-50">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center space-x-3 text-xl">
+                        <motion.div
+                          animate={{ rotate: [0, 5, -5, 0] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                        >
+                          <User className="w-6 h-6 text-blue-600" />
+                        </motion.div>
+                        <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-bold">
+                          Personal Information
+                        </span>
+                      </CardTitle>
+                      <CardDescription className="text-gray-600">
+                        Update your personal details and contact information
+                      </CardDescription>
+                    </div>
+                    <Ripple color="rgba(59, 130, 246, 0.2)" className="rounded-lg">
+                      <Button 
+                        variant={isEditing ? "default" : "outline"}
+                        onClick={isEditing ? handleSave : () => setIsEditing(true)}
+                        disabled={isSaving}
+                        className={isEditing ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" : "border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50"}
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          isEditing ? "Save Changes" : "Edit Profile"
+                        )}
+                      </Button>
+                    </Ripple>
                   </div>
-                  <Button 
-                    variant={isEditing ? "default" : "outline"}
-                    onClick={isEditing ? handleSave : () => setIsEditing(true)}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      isEditing ? "Save Changes" : "Edit Profile"
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
+                </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -422,20 +493,32 @@ const Profile = () => {
                     </Popover>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* Change Password */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center space-x-2">
-                  <Shield className="w-5 h-5" />
-                  <span>Change Password</span>
-                </CardTitle>
-                <CardDescription>
-                  Update your password to keep your account secure
-                </CardDescription>
-              </CardHeader>
+            <motion.div
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-purple-50">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center space-x-3">
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
+                    >
+                      <Shield className="w-6 h-6 text-purple-600" />
+                    </motion.div>
+                    <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent font-bold">
+                      Change Password
+                    </span>
+                  </CardTitle>
+                  <CardDescription className="text-gray-600">
+                    Update your password to keep your account secure
+                  </CardDescription>
+                </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="currentPassword">Current Password</Label>
@@ -467,31 +550,53 @@ const Profile = () => {
                     placeholder="Confirm new password"
                   />
                 </div>
-                <Button 
-                  onClick={handlePasswordChange}
-                  disabled={isChangingPassword}
-                  className="w-full"
-                >
-                  {isChangingPassword ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Changing Password...
-                    </>
-                  ) : (
-                    'Change Password'
-                  )}
-                </Button>
+                <Ripple color="rgba(147, 51, 234, 0.2)" className="rounded-lg">
+                  <Button 
+                    onClick={handlePasswordChange}
+                    disabled={isChangingPassword}
+                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                  >
+                    {isChangingPassword ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Changing Password...
+                      </>
+                    ) : (
+                      'Change Password'
+                    )}
+                  </Button>
+                </Ripple>
               </CardContent>
             </Card>
+          </motion.div>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <motion.div 
+            className="space-y-6"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+          >
             {/* Profile Picture */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Profile Picture</CardTitle>
-              </CardHeader>
+            <motion.div
+              whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-indigo-50">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center space-x-2">
+                    <motion.div
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
+                    >
+                      <Camera className="w-6 h-6 text-indigo-600" />
+                    </motion.div>
+                    <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">
+                      Profile Picture
+                    </span>
+                  </CardTitle>
+                </CardHeader>
               <CardContent className="flex flex-col items-center space-y-4">
                 <Avatar className="w-24 h-24">
                   <AvatarImage src={profileImage || undefined} alt="Profile" />
@@ -504,21 +609,43 @@ const Profile = () => {
                   onChange={handlePhotoChange}
                   className="hidden"
                 />
-                <Button variant="outline" size="sm" onClick={triggerFileInput}>
-                  <Camera className="w-4 h-4 mr-2" />
-                  Change Photo
-                </Button>
+                <Ripple color="rgba(99, 102, 241, 0.2)" className="rounded-lg">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={triggerFileInput}
+                    className="border-2 border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50"
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Change Photo
+                  </Button>
+                </Ripple>
                 <p className="text-xs text-gray-500 text-center">
                   JPG, PNG or WebP. Max size 5MB.
                 </p>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* Account Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Account Status</CardTitle>
-              </CardHeader>
+            <motion.div
+              whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-green-50">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center space-x-2">
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                    >
+                      <Star className="w-6 h-6 text-green-600" />
+                    </motion.div>
+                    <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent font-bold">
+                      Account Status
+                    </span>
+                  </CardTitle>
+                </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Subscription</span>
@@ -548,17 +675,25 @@ const Profile = () => {
                   </span>
                 </div>
                 <Separator />
-                <Button variant="outline" size="sm" className="w-full" onClick={handleAccountSettings}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Account Settings
-                </Button>
-              </CardContent>
-            </Card>
+                <Ripple color="rgba(34, 197, 94, 0.2)" className="rounded-lg">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full border-2 border-green-200 hover:border-green-300 hover:bg-green-50" 
+                    onClick={handleAccountSettings}
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Account Settings
+                  </Button>
+                </Ripple>
+                </CardContent>
+              </Card>
+            </motion.div>
 
 
-          </div>
-        </div>
-      </div>
+          </motion.div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };
